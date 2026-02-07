@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth.routes");
 const reservasRoutes = require("./routes/reservas.routes");
@@ -10,12 +11,13 @@ const app = express();
 // CORS para el frontend (Vite por defecto corre en :5173)
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
   })
 );
 
 app.use(express.json());
+app.use(cookieParser()); // Parse cookies for refresh tokens
 
 // Endpoint simple para verificar que el backend está vivo.
 app.get("/health", (_, res) => res.json({ ok: true }));

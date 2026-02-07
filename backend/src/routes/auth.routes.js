@@ -1,9 +1,19 @@
 const router = require("express").Router();
-const authJWT = require("../middleware/authJWT");
-const { register, login, me } = require("../controllers/auth.controller");
+const { verifyToken } = require("../middleware/authJWT");
+const authController = require("../controllers/auth.controller");
 
-router.post("/register", register);
-router.post("/login", login);
-router.get("/me", authJWT, me);
+// Email/password authentication
+router.post("/register", authController.register);
+router.post("/login", authController.login);
+
+// Firebase SSO authentication
+router.post("/firebase", authController.firebaseLogin);
+
+// Token management
+router.post("/refresh", authController.refresh);
+router.post("/logout", authController.logout);
+
+// Current user
+router.get("/me", verifyToken, authController.me);
 
 module.exports = router;
