@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab
+      POSTGRES_DB: labdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    depends_on:
+      - postgres
+      - mongo
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+
+volumes:
+  pg_data:
+  mongo_data:
