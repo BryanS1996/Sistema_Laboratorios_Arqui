@@ -1,13 +1,15 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { clearToken } from '../lib/api'
+import { clearTokens } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 const linkBase = 'block rounded-lg px-3 py-2 text-sm font-medium'
 
 export default function Sidebar() {
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
 
   function logout() {
-    clearToken()
+    clearTokens()
     navigate('/login')
   }
 
@@ -28,6 +30,17 @@ export default function Sidebar() {
         >
           Mis Reservas
         </NavLink>
+
+        {isAdmin && (
+          <NavLink
+            to="/admin/academic"
+            className={({ isActive }) =>
+              `${linkBase} ${isActive ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'}`
+            }
+          >
+            Gestión Académica
+          </NavLink>
+        )}
 
         <button
           onClick={logout}

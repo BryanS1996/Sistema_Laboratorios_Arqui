@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import AppLayout from '../components/AppLayout'
 import { apiFetch } from '../lib/api'
+import { getSubjects } from '../lib/academic'
 
 function formatDate(fecha) {
   return fecha
@@ -16,17 +17,24 @@ export default function Reservas() {
     fecha: new Date().toISOString().slice(0, 10),
     horaInicio: '10:00',
     horaFin: '12:00',
-    motivo: 'Práctica'
+    motivo: 'Práctica',
+    subjectId: ''
   })
 
   const hasItems = useMemo(() => items?.length > 0, [items])
+
+  const [subjects, setSubjects] = useState([])
 
   async function load() {
     setError('')
     setLoading(true)
     try {
-      const r = await apiFetch('/reservas/mine')
+      const [r, subs] = await Promise.all([
+        apiFetch('/reservas/mine'),
+        getSubjects()
+      ])
       setItems(r)
+      setSubjects(subs)
     } catch (e) {
       setError(e.message || 'Error')
     } finally {
@@ -139,6 +147,21 @@ export default function Reservas() {
                 />
               </div>
             </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Asignatura</label>
+              <select
+                className="mt-1 w-full rounded-lg border px-3 py-2"
+                value={form.subjectId}
+                onChange={(e) => setForm((f) => ({ ...f, subjectId: e.target.value }))}
+                required
+              >
+                <option value="">-- Seleccionar --</option>
+                {subjects.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-gray-700">Motivo</label>
               <input

@@ -1,0 +1,19 @@
+# No incluir node_modules
+node_modules/
+npm-debug.log*
+
+# No incluir archivos de entorno (se pasan via docker-compose)
+.env
+.env.local
+
+# No incluir archivos de build
+dist/
+build/
+
+# No incluir archivos de log
+*.log
+logs/
+
+# No incluir archivos de IDE
+.vscode/
+.idea/

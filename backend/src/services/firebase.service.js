@@ -1,6 +1,7 @@
 const { auth } = require('../config/firebase.config');
 const SSOProviderDAO = require('../daos/firestore/SSOProviderFirestoreDAO');
 const UserDAO = require('../daos/firestore/UserFirestoreDAO');
+const { determineRole } = require('../utils/roleAssignment');
 
 class FirebaseService {
     /**
@@ -43,11 +44,13 @@ class FirebaseService {
         let user = await UserDAO.findByEmail(email);
 
         if (!user) {
-            // Create new user
+            // Create new user with role from whitelist
+            const role = determineRole(email);
+
             user = await UserDAO.create({
                 email,
                 nombre: name || email.split('@')[0],
-                role: 'student', // Default role
+                role, // Assigned from ADMIN_EMAILS whitelist
                 passwordHash: null // SSO users don't have password
             });
         }

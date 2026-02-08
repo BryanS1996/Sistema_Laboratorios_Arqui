@@ -9,7 +9,7 @@ const reservasService = require("../services/reservas.service");
 
 async function crear(req, res) {
   try {
-    const doc = await reservasService.crear(req.user.id, req.body);
+    const doc = await reservasService.crear(req.user, req.body);
     return res.status(201).json(doc);
   } catch (e) {
     return res.status(400).json({ message: e.message });

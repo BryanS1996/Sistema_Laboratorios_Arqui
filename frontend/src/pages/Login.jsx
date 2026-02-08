@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiFetch, setToken } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,7 +21,12 @@ export default function Login() {
         body: { email, password },
         auth: false
       })
-      setToken(r.token)
+      console.log('Login response:', r)
+      console.log('Access Token:', r.accessToken)
+      console.log('User:', r.user)
+
+      setToken(r.accessToken)
+      login(r.user) // Actualizar estado global de autenticación
       navigate('/reservas')
     } catch (err) {
       setError(err.message || 'Error')

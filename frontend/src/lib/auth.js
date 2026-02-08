@@ -1,22 +1,31 @@
-import { apiFetch, setToken, clearToken } from './api'
+// Re-exportar funciones de autenticación desde api.js para compatibilidad hacia atrás
+export {
+  login,
+  loginWithFirebase,
+  register,
+  logout,
+  getCurrentUser,
+  getToken,
+  setToken,
+  clearTokens
+} from './api';
 
-export async function login(email, password) {
-  const r = await apiFetch('/auth/login', { method: 'POST', body: { email, password }, auth: false })
-  setToken(r.token)
-  localStorage.setItem('user', JSON.stringify(r.user))
-  return r
-}
-
-export async function register(nombre, email, password) {
-  return apiFetch('/auth/register', { method: 'POST', body: { nombre, email, password }, auth: false })
-}
-
+/**
+ * Obtener usuario desde localStorage
+ * Nota: Esto es un caché. La fuente real de verdad es el backend mediante getCurrentUser()
+ */
 export function getUser() {
-  const raw = localStorage.getItem('user')
-  return raw ? JSON.parse(raw) : null
+  const raw = localStorage.getItem('user');
+  return raw ? JSON.parse(raw) : null;
 }
 
-export function logout() {
-  clearToken()
-  localStorage.removeItem('user')
+/**
+ * Guardar usuario en caché de localStorage
+ */
+export function setUser(user) {
+  if (user) {
+    localStorage.setItem('user', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('user');
+  }
 }

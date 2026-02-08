@@ -4,6 +4,7 @@ const UserDTO = require("../dtos/UserDTO");
 const UserDAO = require("../daos/firestore/UserFirestoreDAO");
 const RefreshTokenService = require("./refreshToken.service");
 const AuditService = require("./audit.service");
+const { determineRole } = require("../utils/roleAssignment");
 const { isValidEmail, normalizeEmail } = require("../utils/validators");
 
 class AuthService {
@@ -24,11 +25,15 @@ class AuthService {
     if (exists) throw new Error("Email ya registrado");
 
     const passwordHash = await bcrypt.hash(password, 10);
+
+    // Determine role from ADMIN_EMAILS whitelist
+    const role = determineRole(emailNorm);
+
     const user = await UserDAO.create({
       email: emailNorm,
       passwordHash,
       nombre,
-      role: 'student' // Default role
+      role // Assigned from whitelist
     });
 
     // Log registration

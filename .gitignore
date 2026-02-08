@@ -1,7 +1,16 @@
 node_modules/
 .env
 .env.*
+!.env.example
 dist/
 build/
 *.log
+logs/
 .DS_Store
+
+# Firebase service account
+serviceAccountKey.json
+firebase-adminsdk-*.json
+
+# Backblaze credentials
+b2-credentials.json

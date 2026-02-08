@@ -56,6 +56,23 @@ class ReservaMongoDAO extends ReservaDAO {
     const r = await ReservaModel.deleteOne({ _id: id, userId });
     return r.deletedCount === 1;
   }
+
+  /**
+   * Encuentra reservas que solapen con el horario dado para un laboratorio específico.
+   * Retorna una lista de reservas conflictivas.
+   */
+  async findOverlapping(laboratorio, fecha, horaInicio, horaFin) {
+    await connectMongo();
+    // Solapamiento: (StartA < EndB) && (EndA > StartB)
+    return ReservaModel.find({
+      laboratorio,
+      fecha,
+      $and: [
+        { horaInicio: { $lt: horaFin } },
+        { horaFin: { $gt: horaInicio } }
+      ]
+    });
+  }
 }
 
 module.exports = ReservaMongoDAO;

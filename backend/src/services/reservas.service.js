@@ -10,7 +10,10 @@ class ReservasService {
     this.userDAO = factory.createUserDAO();
   }
 
-  async crear(userId, data) {
+  async crear(user, data) {
+    const userId = user.id;
+    const userRole = user.role || 'student';
+
     const { laboratorio, fecha, horaInicio, horaFin } = data;
     if (!laboratorio || !fecha || !horaInicio || !horaFin) {
       throw new Error("Faltan campos: laboratorio, fecha, horaInicio, horaFin");
@@ -24,6 +27,36 @@ class ReservasService {
     // Validación del rango de horas (fin debe ser mayor a inicio)
     if (!isValidTimeRange(horaInicio, horaFin)) {
       throw new Error("Rango de horas inválido (horaFin debe ser mayor a horaInicio)");
+    }
+
+    // --- Lógica de Prioridad y Conflictos ---
+    const conflicts = await this.reservaDAO.findOverlapping(laboratorio, fecha, horaInicio, horaFin);
+
+    for (const conflict of conflicts) {
+      // Obtener rol del dueño de la reserva conflictiva
+      const owner = await this.userDAO.findById(conflict.userId);
+      // Si no existe el usuario dueño (raro), asumimos que es estudiante o borramos
+      const ownerRole = owner ? owner.role : 'student';
+
+      if (userRole === 'student') {
+        throw new Error("El laboratorio ya está reservado en ese horario.");
+      }
+
+      if (userRole === 'professor') {
+        if (ownerRole === 'student') {
+          // Prioridad: Profesor sobre Estudiante -> Borrar reserva del estudiante
+          // TODO: Notificar al estudiante?
+          await this.reservaDAO.deleteById(conflict._id, conflict.userId);
+        } else {
+          // Conflicto con otro profesor o admin
+          throw new Error("El laboratorio ya está reservado por otro profesor o administrador.");
+        }
+      }
+
+      // Si es admin, puede sobreescribir (asumimos comportamiento similar a profesor o total)
+      if (userRole === 'admin') {
+        await this.reservaDAO.deleteById(conflict._id, conflict.userId);
+      }
     }
 
     const dto = new ReservaDTO({ ...data, userId });

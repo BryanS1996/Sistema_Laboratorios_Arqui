@@ -4,6 +4,16 @@ class AuditService {
     /**
      * Log an action
      */
+    /**
+     * Expose ACTIONS constants on the instance
+     */
+    get ACTIONS() {
+        return AuditService.ACTIONS;
+    }
+
+    /**
+     * Log an action
+     */
     async log(userId, action, entityType = null, entityId = null, details = {}, req = null) {
         const logEntry = {
             userId,

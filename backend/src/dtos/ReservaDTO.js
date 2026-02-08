@@ -7,6 +7,8 @@ class ReservaDTO {
     this.horaInicio = horaInicio; // HH:mm
     this.horaFin = horaFin; // HH:mm
     this.motivo = motivo;
+    this.subjectId = subjectId;
+    this.parallelId = parallelId;
   }
 }
 
