@@ -1,16 +1,19 @@
 import Sidebar from './Sidebar'
+import Header from './Header'
+import Footer from './Footer'
 
 export default function AppLayout({ children }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <main className="flex-1 p-6">
-          <div className="mx-auto max-w-4xl">
-            {children}
-          </div>
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
+          {children}
         </main>
+        <Footer />
       </div>
     </div>
   )
 }
+

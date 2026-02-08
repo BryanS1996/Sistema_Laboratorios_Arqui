@@ -31,7 +31,12 @@ class ReservaMongoDAO extends ReservaDAO {
     return ReservaModel.findOne({ _id: id, userId });
   }
 
-  /** Actualiza una reserva por id y userId (update parcial). */
+  async findAll() {
+    await connectMongo();
+    return ReservaModel.find({}).sort({ createdAt: -1 });
+  }
+
+  /** Actualiza una reserva por id y userId (update parcial). Si userId es null, actualiza cualquiera (admin). */
   async updateById(id, userId, reservaDTO) {
     await connectMongo();
     const update = {};
@@ -43,8 +48,11 @@ class ReservaMongoDAO extends ReservaDAO {
     if (reservaDTO.horaFin !== undefined) update.horaFin = reservaDTO.horaFin;
     if (reservaDTO.motivo !== undefined) update.motivo = reservaDTO.motivo;
 
+    const query = { _id: id };
+    if (userId) query.userId = userId;
+
     const doc = await ReservaModel.findOneAndUpdate(
-      { _id: id, userId },
+      query,
       { $set: update },
       { new: true }
     );
@@ -53,7 +61,9 @@ class ReservaMongoDAO extends ReservaDAO {
 
   async deleteById(id, userId) {
     await connectMongo();
-    const r = await ReservaModel.deleteOne({ _id: id, userId });
+    const query = { _id: id };
+    if (userId) query.userId = userId;
+    const r = await ReservaModel.deleteOne(query);
     return r.deletedCount === 1;
   }
 

@@ -63,12 +63,46 @@ class ReservasService {
     return this.reservaDAO.create(dto);
   }
 
+  async obtenerTodas(user) {
+    if (user.role === 'admin') {
+      const reservas = await this.reservaDAO.findAll();
+
+      // Enrich with user info
+      // 1. Get unique user IDs
+      const userIds = [...new Set(reservas.map(r => r.userId))];
+
+      // 2. Fetch users from Postgres
+      // We need a method in UserDAO to find multiple by ID, or loop findById (cache it)
+      // optimization: loop for now as we don't have findByIds
+      const usersMap = {};
+      for (const uid of userIds) {
+        if (uid) {
+          const u = await this.userDAO.findById(uid);
+          if (u) usersMap[uid] = u;
+        }
+      }
+
+      // 3. Attach
+      return reservas.map(r => {
+        const rObj = r.toObject ? r.toObject() : r;
+        const u = usersMap[r.userId];
+        return {
+          ...rObj,
+          usuario: u ? { nombre: u.nombre, email: u.email, role: u.role } : { nombre: 'Desconocido' }
+        };
+      });
+    }
+    return this.reservaDAO.findByUser(user.id);
+  }
+
+  // Se mantiene por compatibilidad, pero preferir usar obtenerTodas
   async misReservas(userId) {
     return this.reservaDAO.findByUser(userId);
   }
 
-  async eliminar(userId, reservaId) {
-    return this.reservaDAO.deleteById(reservaId, userId);
+  async eliminar(user, reservaId) {
+    const userIdToCheck = user.role === 'admin' ? null : user.id;
+    return this.reservaDAO.deleteById(reservaId, userIdToCheck);
   }
 
   /** Obtiene una reserva específica del usuario autenticado. */

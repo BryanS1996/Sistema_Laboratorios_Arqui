@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/auth.routes");
 const reservasRoutes = require("./routes/reservas.routes");
 const academicRoutes = require("./routes/academic.routes");
+const userRoutes = require("./routes/user.routes");
 
 // Aplicación Express (sin levantar el servidor). Permite testear/usar en server.js
 const app = express();
@@ -26,5 +27,6 @@ app.get("/health", (_, res) => res.json({ ok: true }));
 app.use("/auth", authRoutes);
 app.use("/reservas", reservasRoutes);
 app.use("/academic", academicRoutes);
+app.use("/users", userRoutes);
 
 module.exports = app;

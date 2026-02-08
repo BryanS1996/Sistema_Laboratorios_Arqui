@@ -36,6 +36,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # Mongo Express Web Interface
+  mongo-express:
+    image: mongo-express
+    container_name: gestor_lab_mongo_express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH: false
+    networks:
+      - gestor_lab_network
+    depends_on:
+      - mongo
+
   # pgAdmin Tool
   pgadmin:
     image: dpage/pgadmin4

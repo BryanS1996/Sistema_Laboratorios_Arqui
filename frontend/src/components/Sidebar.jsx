@@ -1,54 +1,51 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { clearTokens } from '../lib/api'
+import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
-const linkBase = 'block rounded-lg px-3 py-2 text-sm font-medium'
-
 export default function Sidebar() {
-  const navigate = useNavigate()
   const { isAdmin } = useAuth()
 
-  function logout() {
-    clearTokens()
-    navigate('/login')
-  }
+  const linkBase = "block rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200"
+  const activeClass = "bg-indigo-50 text-indigo-700"
+  const inactiveClass = "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+
+  const getLinkClass = ({ isActive }) => `${linkBase} ${isActive ? activeClass : inactiveClass}`
 
   return (
-    <aside className="w-64 border-r bg-white">
-      <div className="p-4">
-        <div className="text-lg font-semibold">Gestor Laboratorio</div>
-        <div className="mt-1 text-xs text-gray-500">Frontend básico</div>
+    <aside className="w-64 flex-shrink-0 border-r bg-white hidden md:block">
+      <div className="flex h-16 items-center justify-center border-b">
+        <span className="text-sm font-bold tracking-wider text-gray-500">NAVEGACIÓN</span>
       </div>
 
-      <nav className="px-3 pb-4">
-        <div className="text-xs font-semibold text-gray-500 px-3 mb-2">MENÚ</div>
-        <NavLink
-          to="/reservas"
-          className={({ isActive }) =>
-            `${linkBase} ${isActive ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'}`
-          }
-        >
-          Mis Reservas
-        </NavLink>
+      <nav className="p-4 space-y-1">
+        <div className="pb-2">
+          <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Reservas</p>
+          <NavLink to="/reservas/catalog" className={getLinkClass}>
+            Catálogo
+          </NavLink>
+          <NavLink to="/reservas/new" className={getLinkClass}>
+            Hacer Reserva
+          </NavLink>
+          <NavLink to="/reservas/all" className={getLinkClass}>
+            Disponibilidad
+          </NavLink>
+          <NavLink to="/reservas/mine" className={getLinkClass}>
+            Mis Reservas
+          </NavLink>
+        </div>
 
         {isAdmin && (
-          <NavLink
-            to="/admin/academic"
-            className={({ isActive }) =>
-              `${linkBase} ${isActive ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-100'}`
-            }
-          >
-            Gestión Académica
-          </NavLink>
+          <div className="pt-4 border-t">
+            <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Administración</p>
+            <NavLink to="/admin/academic" className={getLinkClass}>
+              Gestión Académica
+            </NavLink>
+            <NavLink to="/admin/users" className={getLinkClass}>
+              Gestión de Usuarios
+            </NavLink>
+          </div>
         )}
-
-        <button
-          onClick={logout}
-          className="mt-3 w-full rounded-lg bg-gray-100 px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-200"
-        >
-          Cerrar sesión
-        </button>
       </nav>
     </aside>
   )
 }
+

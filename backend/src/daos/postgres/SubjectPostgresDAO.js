@@ -41,7 +41,7 @@ class SubjectPostgresDAO {
     async assignProfessor(professorId, subjectId) {
         const pool = getPool();
         await pool.query(
-            "INSERT INTO professor_subjects(professor_id, subject_id) VALUES($1, $2) ON CONFLICT DO NOTHING",
+            "INSERT INTO professor_assignments(professor_id, subject_id) VALUES($1, $2) ON CONFLICT DO NOTHING",
             [professorId, subjectId]
         );
     }
@@ -49,7 +49,7 @@ class SubjectPostgresDAO {
     async removeProfessor(professorId, subjectId) {
         const pool = getPool();
         await pool.query(
-            "DELETE FROM professor_subjects WHERE professor_id=$1 AND subject_id=$2",
+            "DELETE FROM professor_assignments WHERE professor_id=$1 AND subject_id=$2",
             [professorId, subjectId]
         );
     }
@@ -58,9 +58,22 @@ class SubjectPostgresDAO {
         const pool = getPool();
         const { rows } = await pool.query(
             `SELECT s.* FROM subjects s
-       JOIN professor_subjects ps ON ps.subject_id = s.id
+       JOIN professor_assignments ps ON ps.subject_id = s.id
        WHERE ps.professor_id = $1`,
             [professorId]
+        );
+        return rows;
+    }
+
+    async getSubjectsByStudent(studentId) {
+        const pool = getPool();
+        const { rows } = await pool.query(
+            `SELECT DISTINCT s.* FROM subjects s
+       JOIN parallels p ON p.subject_id = s.id
+       JOIN student_enrollments se ON se.parallel_id = p.id
+       WHERE se.student_id = $1
+       ORDER BY s.name`,
+            [studentId]
         );
         return rows;
     }

@@ -1,13 +1,18 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserDTO = require("../dtos/UserDTO");
-const UserDAO = require("../daos/firestore/UserFirestoreDAO");
+// Remove hardcoded Firestore DAO
+const { getFactory } = require("../factories");
 const RefreshTokenService = require("./refreshToken.service");
 const AuditService = require("./audit.service");
 const { determineRole } = require("../utils/roleAssignment");
 const { isValidEmail, normalizeEmail } = require("../utils/validators");
 
 class AuthService {
+  constructor() {
+    this.userDAO = getFactory().createUserDAO();
+  }
+
 
 
   async register({ email, password, nombre }, req = null) {
@@ -21,7 +26,7 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
-    const exists = await UserDAO.findByEmail(emailNorm);
+    const exists = await this.userDAO.findByEmail(emailNorm);
     if (exists) throw new Error("Email ya registrado");
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -29,7 +34,7 @@ class AuthService {
     // Determine role from ADMIN_EMAILS whitelist
     const role = determineRole(emailNorm);
 
-    const user = await UserDAO.create({
+    const user = await this.userDAO.create({
       email: emailNorm,
       passwordHash,
       nombre,
@@ -53,7 +58,7 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
-    const user = await UserDAO.findByEmail(emailNorm);
+    const user = await this.userDAO.findByEmail(emailNorm);
     if (!user) throw new Error("Credenciales inválidas");
 
     // Check if user has password (might be SSO-only user)
@@ -81,7 +86,7 @@ class AuthService {
     );
 
     // Update last login
-    await UserDAO.updateLastLogin(user.id);
+    await this.userDAO.updateLastLogin(user.id);
 
     // Log login
     await AuditService.log(user.id, AuditService.ACTIONS.LOGIN, null, null, {}, req);
@@ -95,10 +100,11 @@ class AuthService {
 
 
   async me(userId) {
-    const user = await UserDAO.findById(userId);
+    const user = await this.userDAO.findById(userId);
     if (!user) throw new Error("Usuario no encontrado");
     return new UserDTO(user);
   }
+
 
   /**
    * Logout user - revoke refresh token

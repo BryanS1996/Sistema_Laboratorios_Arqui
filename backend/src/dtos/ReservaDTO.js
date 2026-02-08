@@ -1,5 +1,5 @@
 class ReservaDTO {
-  constructor({ id, userId, laboratorio, fecha, horaInicio, horaFin, motivo }) {
+  constructor({ id, userId, laboratorio, fecha, horaInicio, horaFin, motivo, subjectId, parallelId }) {
     this.id = id;
     this.userId = userId;
     this.laboratorio = laboratorio;

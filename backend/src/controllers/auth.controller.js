@@ -1,9 +1,12 @@
 const authService = require('../services/auth.service');
 const firebaseService = require('../services/firebase.service');
 const refreshTokenService = require('../services/refreshToken.service');
-const UserDAO = require('../daos/firestore/UserFirestoreDAO');
+const { getFactory } = require("../factories");
 
 class AuthController {
+  constructor() {
+    this.userDAO = getFactory().createUserDAO();
+  }
   /**
    * POST /auth/register - Register with email/password
    */
@@ -71,7 +74,7 @@ class AuthController {
       );
 
       // Update last login
-      await UserDAO.updateLastLogin(user.id);
+      await this.userDAO.updateLastLogin(user.id);
 
       // Set refresh token cookie
       res.cookie('refreshToken', refreshToken, {
@@ -112,7 +115,7 @@ class AuthController {
       const result = await refreshTokenService.refreshAccessToken(refreshToken);
 
       // Get user data to include in response
-      const user = await UserDAO.findById(result.userId);
+      const user = await this.userDAO.findById(result.userId);
 
       res.json({
         accessToken: result.accessToken,

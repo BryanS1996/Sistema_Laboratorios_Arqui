@@ -16,11 +16,19 @@ router.post("/assignments/professor", [verifyToken, requireAdmin], academicContr
 router.post("/assignments/student", [verifyToken, requireAdmin], academicController.assignStudent);
 
 // Public/Shared routes
-router.get("/subjects", [verifyToken], academicController.getAllSubjects);
+router.get("/subjects", [verifyToken], academicController.getSubjects);
 router.get("/subjects/:subjectId/parallels", [verifyToken], academicController.getParallelsBySubject);
 
 // User specific routes
 router.get("/professors/me/subjects", [verifyToken], academicController.getProfessorSubjects);
 router.get("/students/me/parallels", [verifyToken], academicController.getStudentParallels);
+
+// --- Laboratories ---
+router.post("/laboratories", [verifyToken, requireAdmin], academicController.createLaboratory);
+router.get("/laboratories", [verifyToken], academicController.getLaboratories);
+
+// --- Schedules ---
+router.post("/schedules", [verifyToken, requireAdmin], academicController.assignSchedule);
+router.get("/schedules", [verifyToken], academicController.getSchedules);
 
 module.exports = router;
