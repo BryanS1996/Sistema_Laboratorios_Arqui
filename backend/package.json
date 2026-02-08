@@ -9,6 +9,7 @@
     "init-firestore": "node scripts/init-firestore.js"
   },
   "dependencies": {
+    "aws-sdk": "^2.1693.0",
     "backblaze-b2": "^1.7.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",

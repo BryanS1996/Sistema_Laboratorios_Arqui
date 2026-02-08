@@ -4,6 +4,7 @@ const UserDTO = require("../dtos/UserDTO");
 const UserDAO = require("../daos/firestore/UserFirestoreDAO");
 const RefreshTokenService = require("./refreshToken.service");
 const AuditService = require("./audit.service");
+const { determineRole } = require("../utils/roleAssignment");
 const { isValidEmail, normalizeEmail } = require("../utils/validators");
 
 class AuthService {
@@ -14,21 +15,50 @@ class AuthService {
       throw new Error("Faltan campos: email, password, nombre");
     }
 
-    // Validación de email (más estricta que el input type="email" del navegador)
     const emailNorm = normalizeEmail(email);
     if (!isValidEmail(emailNorm)) {
       throw new Error("Email inválido");
     }
 
+    // 1. Check if user exists in Firestore
     const exists = await UserDAO.findByEmail(emailNorm);
-    if (exists) throw new Error("Email ya registrado");
+    if (exists) throw new Error("Email ya registrado (en base de datos local)");
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // 2. Create user in Firebase Authentication (using Admin SDK)
+    const { admin } = require('../config/firebase.config');
+    let firebaseUid;
+
+    try {
+      const userRecord = await admin.auth().createUser({
+        email: emailNorm,
+        password: password,
+        displayName: nombre,
+        emailVerified: false,
+        disabled: false
+      });
+      firebaseUid = userRecord.uid;
+    } catch (error) {
+      if (error.code === 'auth/email-already-exists') {
+        // If exists in Firebase but not local, we should arguably proceed to create local,
+        // but let's throw for now to avoid confusion or fetch the uid.
+        // Actually, let's fetch the user to get the UID if it exists.
+        const userRecord = await admin.auth().getUserByEmail(emailNorm);
+        firebaseUid = userRecord.uid;
+      } else {
+        console.error("Firebase Admin Create User Error:", error);
+        throw new Error(`Error al crear usuario en Firebase: ${error.message}`);
+      }
+    }
+
+    // 3. Determine role
+    const role = determineRole(emailNorm);
+
+    // 4. Create user in Firestore (using firebaseUid as ID)
     const user = await UserDAO.create({
-      email: emailNorm,
-      passwordHash,
+      id: firebaseUid,
+      email: emailNorm, // We keep 'email' as standard. 'correo' in DB is legacy/inconsistent.
       nombre,
-      role: 'student' // Default role
+      rol: role // Saving as 'rol' to match Firestore consistency
     });
 
     // Log registration
@@ -48,20 +78,78 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
-    const user = await UserDAO.findByEmail(emailNorm);
-    if (!user) throw new Error("Credenciales inválidas");
-
-    // Check if user has password (might be SSO-only user)
-    if (!user.passwordHash) {
-      throw new Error("Esta cuenta usa inicio de sesión social. Por favor usa Google/GitHub/Microsoft.");
+    // 1. Verify credentials with Firebase REST API (Identity Toolkit)
+    // We need the API KEY here. It's safe on backend.
+    const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+    if (!apiKey) {
+      console.error("Falta FIREBASE_API_KEY en variables de entorno del backend");
+      throw new Error("Error de configuración del servidor (API Key missing)");
     }
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) throw new Error("Credenciales inválidas");
+    const verifyUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
 
-    // Generate access token (short-lived)
+    let firebaseUser;
+    try {
+      const response = await fetch(verifyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailNorm,
+          password: password,
+          returnSecureToken: true
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorCode = data.error?.message || 'LOGIN_FAILED';
+        if (errorCode === 'EMAIL_NOT_FOUND' || errorCode === 'INVALID_PASSWORD' || errorCode === 'INVALID_LOGIN_CREDENTIALS') {
+          throw new Error("Credenciales inválidas");
+        }
+        if (errorCode === 'USER_DISABLED') {
+          throw new Error("Usuario deshabilitado");
+        }
+        if (errorCode === 'PASSWORD_LOGIN_DISABLED') {
+          throw new Error("El inicio de sesión con contraseña no está habilitado en Firebase.");
+        }
+        throw new Error(`Error de autenticación: ${errorCode}`);
+      }
+
+      firebaseUser = data; // contains idToken, localId (uid), email, refreshToken
+    } catch (error) {
+      // If it's our custom error, rethrow. If fetch failed, wrap it.
+      if (error.message === "Credenciales inválidas" || error.message === "Usuario deshabilitado" || error.message.includes("habilitado")) {
+        throw error;
+      }
+      console.error("Firebase REST Login Error:", error);
+      throw new Error("Error al validar credenciales con proveedor de identidad");
+    }
+
+    // 2. Sync/Get user from Firestore
+    // Even though Firebase authenticated them, we need our local Firestore User record for roles
+    let user = await UserDAO.findByEmail(emailNorm);
+
+    if (!user) {
+      // Edge case: User exists in Auth but not in Firestore 'users' collection
+      // Could happen if created directly in console. Auto-create/sync it.
+      const role = determineRole(emailNorm);
+      // Create with correct fields
+      user = await UserDAO.create({
+        id: firebaseUser.localId, // Use Firebase UID
+        email: emailNorm,
+        nombre: firebaseUser.displayName || emailNorm.split('@')[0],
+        rol: role, // Save as 'rol'
+        createdAt: new Date()
+      });
+    }
+
+    // 3. Generate Backend JWTs
+    // Normalize 'rol' to 'role' for JWT standard usage in middleware
+    const userRole = user.rol || user.role || 'estudiante';
+
     const accessToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: userRole },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '30m' }
     );

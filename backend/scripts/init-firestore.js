@@ -1,5 +1,8 @@
-const { db, FieldValue } = require('../config/firebase.config');
-const { COLLECTIONS } = require('../config/firestore_schema');
+// Load environment variables
+require('dotenv').config();
+
+const { db, FieldValue } = require('../src/config/firebase.config');
+const { COLLECTIONS } = require('../src/config/firestore_schema');
 
 /**
  * Initialize Firestore with time slots
@@ -18,6 +21,7 @@ async function initializeTimeSlots() {
     try {
         console.log('🕒 Initializing time slots...');
 
+        const db = require('../src/config/firebase.config').db;
         const timeSlotsRef = db.collection(COLLECTIONS.TIME_SLOTS);
 
         // Check if time slots already exist

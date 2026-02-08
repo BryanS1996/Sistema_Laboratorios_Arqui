@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { apiFetch } from '../lib/api'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { apiFetch, setToken } from '../lib/api'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -10,11 +10,15 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    console.log('Register component mounted - v2')
+  }, [])
+
   async function onSubmit(e) {
     e.preventDefault()
     setError('')
 
-    // Validación extra de email (más estricta que el input type="email")
+    // Validación extra de email
     const emailNorm = String(email || '').trim().toLowerCase()
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
     if (!emailRegex.test(emailNorm)) {
@@ -24,14 +28,40 @@ export default function Register() {
 
     setLoading(true)
     try {
-      await apiFetch('/auth/register', {
+      // Registrar directamente en el backend (que se encarga de Firebase)
+      const r = await apiFetch('/auth/register', {
         method: 'POST',
-        body: { nombre, email: emailNorm, password },
+        body: { email: emailNorm, password, nombre },
         auth: false
       })
-      navigate('/login')
+
+      // El backend ahora devuelve { user: ... } y opcionalmente tokens si hace auto-login
+      // Pero si auth.controller.register solo devuelve user, necesitamos hacer login
+      // Revisemos auth.controller.js: Returns { user }. No tokens.
+
+      // Entonces hacemos login automático
+      const loginResp = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: { email: emailNorm, password },
+        auth: false
+      })
+
+      if (!loginResp.accessToken) {
+        throw new Error('Cuenta creada, pero error al iniciar sesión automática.')
+      }
+
+      setToken(loginResp.accessToken)
+      navigate('/reservas')
+
     } catch (err) {
-      setError(err.message || 'Error')
+      console.error('❌ Register error:', err)
+      let msg = err.message
+      if (msg.includes('Email ya registrado')) {
+        msg = 'El email ya está registrado.'
+      } else if (msg.includes('weak-password')) {
+        msg = 'La contraseña es muy débil (mínimo 6 caracteres).'
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }

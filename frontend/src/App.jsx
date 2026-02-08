@@ -1,30 +1,50 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Reservas from './pages/Reservas'
-import ProtectedRoute from './components/ProtectedRoute'
-import { getToken } from './lib/api'
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Catalogo from './pages/Catalogo';
+import Reservas from './pages/Reservas';
+import Reportes from './pages/Reportes';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export default function App() {
-  const token = getToken()
-
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to={token ? '/reservas' : '/login'} replace />} />
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<Navigate to="/catalogo" replace />} />
 
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      <Route
-        path="/reservas"
-        element={(
-          <ProtectedRoute>
-            <Reservas />
-          </ProtectedRoute>
-        )}
-      />
+        <Route
+          path="/catalogo"
+          element={
+            <ProtectedRoute>
+              <Catalogo />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  )
+        <Route
+          path="/reservas"
+          element={
+            <ProtectedRoute>
+              <Reservas />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reportes"
+          element={
+            <ProtectedRoute>
+              <Reportes />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
+  );
 }

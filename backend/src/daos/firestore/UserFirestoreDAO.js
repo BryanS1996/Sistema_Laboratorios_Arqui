@@ -10,16 +10,27 @@ class UserFirestoreDAO {
      * Create a new user
      */
     async create(userData) {
-        const docRef = await this.collection.add({
-            ...userData,
-            createdAt: new Date(),
-            lastLoginAt: null
-        });
-
-        return {
-            id: docRef.id,
-            ...userData
-        };
+        // If an ID is provided (e.g., Firebase UID), use it as the document ID
+        // Otherwise, allow Firestore to generate one (though in our current flow, id is always provided)
+        if (userData.id) {
+            await this.collection.doc(userData.id).set({
+                ...userData,
+                createdAt: new Date(),
+                lastLoginAt: null
+            });
+            return userData;
+        } else {
+            // Fallback for auto-generated ID
+            const docRef = await this.collection.add({
+                ...userData,
+                createdAt: new Date(),
+                lastLoginAt: null
+            });
+            return {
+                id: docRef.id,
+                ...userData
+            };
+        }
     }
 
     /**
@@ -37,8 +48,8 @@ class UserFirestoreDAO {
 
         const doc = snapshot.docs[0];
         return {
-            id: doc.id,
-            ...doc.data()
+            ...doc.data(),
+            id: doc.id
         };
     }
 
@@ -53,8 +64,8 @@ class UserFirestoreDAO {
         }
 
         return {
-            id: doc.id,
-            ...doc.data()
+            ...doc.data(),
+            id: doc.id
         };
     }
 
@@ -87,8 +98,8 @@ class UserFirestoreDAO {
 
         const snapshot = await query.get();
         return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+            ...doc.data(),
+            id: doc.id
         }));
     }
 

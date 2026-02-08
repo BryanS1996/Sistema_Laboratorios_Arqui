@@ -77,4 +77,10 @@ class AuditService {
     };
 }
 
-module.exports = new AuditService();
+// Crear instancia del servicio
+const auditServiceInstance = new AuditService();
+
+// Exportar instancia con ACTIONS adjuntas
+auditServiceInstance.ACTIONS = AuditService.ACTIONS;
+
+module.exports = auditServiceInstance;

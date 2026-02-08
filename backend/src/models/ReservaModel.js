@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const ReservaSchema = new mongoose.Schema(
   {
-    userId: { type: Number, required: true },
+    userId: { type: String, required: true },
     laboratorio: { type: String, required: true },
     fecha: { type: String, required: true },
     horaInicio: { type: String, required: true },

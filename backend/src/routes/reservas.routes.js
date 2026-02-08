@@ -1,6 +1,6 @@
 const router = require("express").Router();
 
-const authJWT = require("../middleware/authJWT");
+const { verifyToken } = require("../middleware/authJWT");
 const {
   crear,
   misReservas,
@@ -10,7 +10,7 @@ const {
   eliminar,
 } = require("../controllers/reservas.controller");
 
-router.use(authJWT);
+router.use(verifyToken);
 router.post("/", crear);
 router.get("/mine", misReservas);
 router.get("/mine/report", reporteMine);

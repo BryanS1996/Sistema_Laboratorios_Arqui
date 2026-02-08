@@ -3,7 +3,9 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/auth.routes");
+const laboratoriosRoutes = require("./routes/laboratorios.routes");
 const reservasRoutes = require("./routes/reservas.routes");
+const reportsRoutes = require("./routes/reports.routes");
 
 // Aplicación Express (sin levantar el servidor). Permite testear/usar en server.js
 const app = express();
@@ -23,6 +25,8 @@ app.use(cookieParser()); // Parse cookies for refresh tokens
 app.get("/health", (_, res) => res.json({ ok: true }));
 
 app.use("/auth", authRoutes);
+app.use("/laboratorios", laboratoriosRoutes);
 app.use("/reservas", reservasRoutes);
+app.use("/reports", reportsRoutes);
 
 module.exports = app;

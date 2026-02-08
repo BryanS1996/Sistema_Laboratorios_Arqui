@@ -10,7 +10,7 @@
 class PollingService {
     constructor() {
         this.intervals = new Map(); // Store active intervals
-        this.pollInterval = 5000; // Default: 5 seconds for active tab
+        this.pollInterval = 3000; // Default: 3 seconds for active tab
         this.isActive = !document.hidden; // Track tab visibility
 
         // Listen to visibility changes
@@ -28,7 +28,7 @@ class PollingService {
      * Get current poll interval based on tab visibility
      */
     getCurrentInterval() {
-        return this.isActive ? 5000 : 10000; // 5s active, 10s background
+        return this.isActive ? 3000 : 10000; // 3s active, 10s background
     }
 
     /**
