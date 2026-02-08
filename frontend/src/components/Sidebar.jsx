@@ -22,9 +22,6 @@ export default function Sidebar() {
           <NavLink to="/reservas/catalog" className={getLinkClass}>
             Catálogo
           </NavLink>
-          <NavLink to="/reservas/new" className={getLinkClass}>
-            Hacer Reserva
-          </NavLink>
           <NavLink to="/reservas/all" className={getLinkClass}>
             Disponibilidad
           </NavLink>

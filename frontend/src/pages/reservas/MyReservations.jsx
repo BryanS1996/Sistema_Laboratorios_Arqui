@@ -69,10 +69,16 @@ export default function MyReservations() {
                         <div key={reserva._id} className="bg-white rounded-lg shadow-sm border p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
                                 <h3 className="font-semibold text-gray-900">{reserva.laboratorio}</h3>
-                                <div className="text-sm text-gray-600 mt-1">
-                                    <span className="font-medium text-gray-800">{reserva.fecha}</span> • {reserva.horaInicio} - {reserva.horaFin}
+                                <div className="text-sm text-gray-600 mt-1 space-y-1">
+                                    <div>
+                                        <span className="font-medium text-gray-800">{reserva.fecha}</span> • {reserva.horaInicio} - {reserva.horaFin}
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row sm:gap-4 text-xs text-gray-500">
+                                        <span><strong className="text-gray-700">Materia:</strong> {reserva.materia || 'No especificada'}</span>
+                                        <span><strong className="text-gray-700">Profesor:</strong> {reserva.profesor || 'No asignado'}</span>
+                                    </div>
                                 </div>
-                                {reserva.motivo && <p className="text-sm text-gray-500 italic mt-1">"{reserva.motivo}"</p>}
+                                {reserva.motivo && <p className="text-sm text-gray-500 italic mt-2">"{reserva.motivo}"</p>}
                             </div>
 
                             <button

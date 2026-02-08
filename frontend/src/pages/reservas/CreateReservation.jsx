@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { getSubjects, getLaboratories } from '../../lib/academic'
 import AppLayout from '../../components/AppLayout'
 
 export default function CreateReservation() {
     const [searchParams] = useSearchParams()
+    const navigate = useNavigate()
     const preSelectedLabId = searchParams.get('labId')
 
     const [laboratories, setLaboratories] = useState([])
@@ -70,6 +71,9 @@ export default function CreateReservation() {
         try {
             await apiFetch('/reservas', { method: 'POST', body: form })
             setSuccess('Reserva creada exitosamente')
+            setTimeout(() => {
+                navigate('/reservas/mine')
+            }, 1000)
             setForm({
                 ...form,
                 motivo: 'Práctica',
