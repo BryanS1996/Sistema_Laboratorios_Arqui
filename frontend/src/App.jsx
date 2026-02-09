@@ -10,6 +10,7 @@ import MyReservations from './pages/reservas/MyReservations';
 import AcademicManagement from './pages/AcademicManagement';
 import UserManagement from './pages/UserManagement';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicLayout from './components/PublicLayout';
 
 export default function App() {
   return (
@@ -17,8 +18,16 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/reservas/catalog" replace />} />
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={
+          <PublicLayout>
+            <Login />
+          </PublicLayout>
+        } />
+        <Route path="/register" element={
+          <PublicLayout>
+            <Register />
+          </PublicLayout>
+        } />
 
         <Route path="/reservas/catalog" element={
           <ProtectedRoute>

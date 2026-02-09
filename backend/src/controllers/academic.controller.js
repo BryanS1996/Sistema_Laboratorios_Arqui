@@ -135,6 +135,16 @@ class AcademicController {
         }
     }
 
+    async getParallelNamesBySemester(req, res) {
+        try {
+            const { semesterId } = req.params;
+            const names = await academicService.getParallelNamesBySemester(semesterId);
+            res.json(names);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     // --- NEW: Laboratories ---
     async createLaboratory(req, res) {
         try {
@@ -154,6 +164,26 @@ class AcademicController {
         }
     }
 
+    async updateLaboratory(req, res) {
+        try {
+            const { id } = req.params;
+            const lab = await academicService.updateLaboratory(id, req.body);
+            res.json(lab);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async deleteLaboratory(req, res) {
+        try {
+            const { id } = req.params;
+            await academicService.deleteLaboratory(id);
+            res.json({ message: "Laboratorio eliminado" });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     // --- NEW: Schedules ---
     async assignSchedule(req, res) {
         try {
@@ -166,15 +196,72 @@ class AcademicController {
 
     async getSchedules(req, res) {
         try {
-            const { parallelId } = req.query;
+            const { parallelId, labId } = req.query;
             if (parallelId) {
                 const schedules = await academicService.getSchedulesByParallel(parallelId);
+                return res.json(schedules);
+            }
+            if (labId) {
+                const schedules = await academicService.getSchedulesByLab(labId);
                 return res.json(schedules);
             }
             const schedules = await academicService.getAllSchedules();
             res.json(schedules);
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    }
+
+    // --- NEW: Context Updates ---
+    async updateStudentSemester(req, res) {
+        try {
+            const { id } = req.params;
+            const { semester, parallel } = req.body;
+            await academicService.updateStudentSemester(id, semester, parallel);
+            res.json({ message: "Semestre actualizado" });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async updateProfessorSubjects(req, res) {
+        try {
+            const { id } = req.params;
+            const { subjectIds } = req.body;
+            await academicService.updateProfessorSubjects(id, subjectIds);
+            res.json({ message: "Asignaturas actualizadas" });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    // --- Semesters ---
+    async getSemesters(req, res) {
+        try {
+            const semesters = await academicService.getAllSemesters();
+            res.json(semesters);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async getAllSubjects(req, res) {
+        try {
+            const subjects = await academicService.getAllSubjects();
+            res.json(subjects);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+
+    async generateReservations(req, res) {
+        try {
+            const { startDate, endDate, scheduleId } = req.body;
+            if (!startDate || !endDate) throw new Error("Fechas requeridas");
+            const result = await academicService.generateReservations(startDate, endDate, scheduleId, req.user);
+            res.json(result);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
         }
     }
 }

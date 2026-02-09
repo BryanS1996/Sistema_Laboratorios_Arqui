@@ -220,6 +220,38 @@ class UserPostgresDAO extends UserDAO {
     );
     return rows[0];
   }
+
+  async updateStudentSemester(studentId, semester, parallelName = 'A') {
+    const pool = getPool();
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Clear existing enrollments
+      await client.query('DELETE FROM student_enrollments WHERE student_id = $1', [studentId]);
+
+      // 2. Find Parallels for the given Semester and Parallel Name
+      const { rows: parallels } = await client.query(`
+            SELECT p.id 
+            FROM parallels p
+            JOIN subjects s ON p.subject_id = s.id
+            WHERE s.semester_id = $1 AND p.name = $2
+        `, [semester, parallelName]);
+
+      if (parallels.length > 0) {
+        const values = parallels.map((p, i) => `($1, $${i + 2})`).join(',');
+        const query = `INSERT INTO student_enrollments (student_id, parallel_id) VALUES ${values}`;
+        await client.query(query, [studentId, ...parallels.map(p => p.id)]);
+      }
+
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 module.exports = UserPostgresDAO;

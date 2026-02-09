@@ -8,6 +8,9 @@ export default function CreateReservation() {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const preSelectedLabId = searchParams.get('labId')
+    const preDate = searchParams.get('date')
+    const preStart = searchParams.get('startTime')
+    const preEnd = searchParams.get('endTime')
 
     const [laboratories, setLaboratories] = useState([])
     const [subjects, setSubjects] = useState([])
@@ -17,9 +20,9 @@ export default function CreateReservation() {
 
     const [form, setForm] = useState({
         laboratorio: '',
-        fecha: new Date().toISOString().slice(0, 10),
-        horaInicio: '10:00',
-        horaFin: '12:00',
+        fecha: preDate || new Date().toISOString().slice(0, 10),
+        horaInicio: preStart || '10:00',
+        horaFin: preEnd || '12:00',
         motivo: 'Práctica',
         subjectId: ''
     })

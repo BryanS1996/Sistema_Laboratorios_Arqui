@@ -40,6 +40,11 @@ async function seed() {
         console.log('Connecting to databases...');
         await mongoose.connect(MONGO_URI);
 
+        // Clear existing reservations
+        console.log('Clearing existing reservations...');
+        await Reserva.deleteMany({});
+        console.log('Reservations cleared.');
+
         // 1. Get Labs
         const labsRes = await pool.query('SELECT * FROM laboratories');
         const labs = labsRes.rows;

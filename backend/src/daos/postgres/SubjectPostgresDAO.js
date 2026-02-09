@@ -89,6 +89,31 @@ class SubjectPostgresDAO {
         );
         return rows[0]; // Returns { id, nombre, email } or undefined
     }
+
+    async updateProfessorAssignments(professorId, subjectIds) {
+        const pool = getPool();
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Clear existing
+            await client.query('DELETE FROM professor_assignments WHERE professor_id = $1', [professorId]);
+
+            // 2. Insert new
+            if (subjectIds && subjectIds.length > 0) {
+                const values = subjectIds.map((sid, index) => `($1, $${index + 2})`).join(',');
+                const query = `INSERT INTO professor_assignments (professor_id, subject_id) VALUES ${values}`;
+                await client.query(query, [professorId, ...subjectIds]);
+            }
+
+            await client.query('COMMIT');
+        } catch (e) {
+            await client.query('ROLLBACK');
+            throw e;
+        } finally {
+            client.release();
+        }
+    }
 }
 
 module.exports = SubjectPostgresDAO;

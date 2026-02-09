@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react'
 import { apiFetch } from '../../lib/api'
 import AppLayout from '../../components/AppLayout'
 import { useAuth } from '../../contexts/AuthContext'
+import { Edit2 } from 'lucide-react'
+import EditReservationModal from '../../components/EditReservationModal'
 
 export default function MyReservations() {
     const [reservas, setReservas] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [editingReservation, setEditingReservation] = useState(null)
     const { user, isAdmin } = useAuth()
 
     async function loadReservas() {
@@ -17,9 +20,6 @@ export default function MyReservations() {
             let myData = data
             // Client-side filtering for Admin because backend returns ALL
             if (isAdmin && user?.id) {
-                // Data returned by backend for admin has `userId` field (string) or object?
-                // ReservaMongoDAO returns userId as string usually.
-                // Let's check data structure.
                 myData = data.filter(r => String(r.userId) === String(user.id))
             }
 
@@ -32,7 +32,6 @@ export default function MyReservations() {
     }
 
     useEffect(() => {
-        console.log("Loading my reservations for user:", user?.id)
         if (user) loadReservas()
     }, [user])
 
@@ -81,15 +80,31 @@ export default function MyReservations() {
                                 {reserva.motivo && <p className="text-sm text-gray-500 italic mt-2">"{reserva.motivo}"</p>}
                             </div>
 
-                            <button
-                                onClick={() => deleteReserva(reserva._id)}
-                                className="text-red-600 hover:text-red-800 text-sm font-medium bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition-colors"
-                            >
-                                Cancelar
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setEditingReservation(reserva)}
+                                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors"
+                                >
+                                    <Edit2 size={14} /> Editar
+                                </button>
+                                <button
+                                    onClick={() => deleteReserva(reserva._id)}
+                                    className="text-red-600 hover:text-red-800 text-sm font-medium bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
+            )}
+
+            {editingReservation && (
+                <EditReservationModal
+                    reservation={editingReservation}
+                    onClose={() => setEditingReservation(null)}
+                    onUpdate={() => { loadReservas(); setEditingReservation(null) }}
+                />
             )}
         </AppLayout>
     )

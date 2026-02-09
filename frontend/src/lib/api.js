@@ -78,7 +78,7 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, retry 
 
   // Manejar 401 No autorizado - token expirado
   if (response.status === 401 && auth && retry) {
-    const data = await response.json().catch(() => ({}));
+    const data = await response.clone().json().catch(() => ({}));
 
     // Verificar si es una expiración de token
     if (data.code === 'TOKEN_EXPIRED' || data.error?.includes('expirado')) {

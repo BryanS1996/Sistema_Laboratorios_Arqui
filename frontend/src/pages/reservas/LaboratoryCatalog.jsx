@@ -47,62 +47,65 @@ export default function LaboratoryCatalog() {
                     ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {labs.length === 0 && (
                         <div className="col-span-full text-center py-12 text-gray-500">
                             No hay laboratorios disponibles en este momento.
                         </div>
                     )}
                     {labs.map(lab => (
-                        <div key={lab.id} className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all hover:shadow-md border border-gray-100">
-                            {/* Image Placeholder */}
-                            <div className="aspect-video w-full bg-gray-100 relative overflow-hidden">
-                                <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gradient-to-br from-gray-100 to-gray-200">
-                                    <svg className="w-12 h-12 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                    </svg>
-                                </div>
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                                    <h3 className="text-xl font-bold text-white tracking-wide">{lab.nombre}</h3>
-                                </div>
-                            </div>
+                        <div key={lab.id} className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                            {/* Decorative Background Blob */}
+                            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 opacity-50 transition-transform duration-500 group-hover:scale-125"></div>
 
-                            <div className="flex flex-1 flex-col p-5">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                                        Capacidad: {lab.capacidad} est.
-                                    </span>
-                                    <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                                        Activo
+                            <div className="relative z-10">
+                                <div className="flex items-start justify-between mb-6">
+                                    <div className="flex flex-col">
+                                        <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-blue-800 transition-colors">{lab.nombre}</h3>
+                                        <div className="h-1 w-10 bg-gradient-to-r from-blue-600 to-red-500 rounded-full mt-2 group-hover:w-16 transition-all duration-300"></div>
+                                    </div>
+                                    <span className={`shrink-0 flex h-8 min-w-[2rem] px-2 items-center justify-center rounded-lg text-xs font-bold shadow-sm border ${lab.capacidad > 0 ? 'bg-white text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                        {lab.capacidad} <span className="text-[9px] ml-0.5 text-gray-400 font-normal">MAX</span>
                                     </span>
                                 </div>
 
-                                <div className="mb-6 space-y-2 text-sm text-gray-600">
-                                    <div className="flex items-start gap-2">
-                                        <svg className="h-5 w-5 text-gray-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        <span>{lab.ubicacion || 'Ubicación no especificada'}</span>
+                                <div className="space-y-3 mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ubicación</p>
+                                            <p className="text-sm font-medium text-gray-700 truncate max-w-[140px]" title={lab.ubicacion}>{lab.ubicacion || 'N/A'}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex items-start gap-2">
-                                        <svg className="h-5 w-5 text-gray-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span>Horario: Lunes a Viernes, 7:00 - 19:00</span>
-                                    </div>
-                                </div>
 
-                                <div className="mt-auto">
-                                    <button
-                                        onClick={() => handleReserve(lab)}
-                                        className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 transition-colors"
-                                    >
-                                        Reservar Ahora
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
+                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Horario</p>
+                                            <p className="text-sm font-medium text-gray-700">07:00 - 19:00</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={() => handleReserve(lab)}
+                                className="relative z-10 w-full rounded-xl bg-gray-50 py-3 text-sm font-bold text-gray-900 hover:bg-gray-900 hover:text-white transition-all duration-300 flex items-center justify-center gap-2 group/btn"
+                            >
+                                Reservar
+                                <svg className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </button>
                         </div>
                     ))}
                 </div>

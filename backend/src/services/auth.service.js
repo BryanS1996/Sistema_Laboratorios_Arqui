@@ -15,7 +15,7 @@ class AuthService {
 
 
 
-  async register({ email, password, nombre }, req = null) {
+  async register({ email, password, nombre, semesterId, parallelName, role, subjectIds }, req = null) {
     if (!email || !password || !nombre) {
       throw new Error("Faltan campos: email, password, nombre");
     }
@@ -31,18 +31,48 @@ class AuthService {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Determine role from ADMIN_EMAILS whitelist
-    const role = determineRole(emailNorm);
+    // Use provided role or default to student. 
+    // Secure this if public registration should not allow 'admin' without extra checks.
+    // For now, allow 'student' or 'professor'.
+    const finalRole = (role === 'professor') ? 'professor' : 'student';
 
     const user = await this.userDAO.create({
       email: emailNorm,
       passwordHash,
       nombre,
-      role // Assigned from whitelist
+      role: finalRole
     });
 
+    // Auto-enroll if student data provided
+    if (finalRole === 'student' && semesterId && parallelName) {
+      try {
+        await this.userDAO.updateStudentSemester(user.id, semesterId, parallelName);
+      } catch (e) {
+        console.error("Error auto-enrolling student:", e);
+        // Don't fail registration if enrollment fails, but log it
+      }
+    }
+
+    // Assign subjects if professor
+    if (finalRole === 'professor' && subjectIds && subjectIds.length > 0) {
+      try {
+        const SubjectPostgresDAO = require("../daos/postgres/SubjectPostgresDAO");
+        const subjectDAO = new SubjectPostgresDAO();
+        await subjectDAO.updateProfessorAssignments(user.id, subjectIds);
+      } catch (e) {
+        console.error("Error assigning subjects to professor:", e);
+      }
+    }
+
     // Log registration
-    await AuditService.log(user.id, AuditService.ACTIONS.REGISTER, null, null, { email: emailNorm }, req);
+    await AuditService.log(
+      user.id,
+      AuditService.ACTIONS.REGISTER,
+      null,
+      null,
+      { email: emailNorm, semesterId, parallelName, role: finalRole, subjectIds },
+      req
+    );
 
     return new UserDTO(user);
   }

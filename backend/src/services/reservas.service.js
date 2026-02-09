@@ -44,8 +44,16 @@ class ReservasService {
 
       if (userRole === 'professor') {
         if (ownerRole === 'student') {
-          // Prioridad: Profesor sobre Estudiante -> Borrar reserva del estudiante
-          // TODO: Notificar al estudiante?
+          // Check 10-minute rule
+          const createdAt = new Date(conflict.createdAt);
+          const now = new Date();
+          const diffMinutes = (now - createdAt) / 1000 / 60;
+
+          if (diffMinutes > 10) {
+            throw new Error("No se puede reclamar: La reserva del estudiante ya está consolidada (>10 min).");
+          }
+
+          // Prioridad: Profesor sobre Estudiante (< 10 min) -> Borrar reserva del estudiante
           await this.reservaDAO.deleteById(conflict._id, conflict.userId);
         } else {
           // Conflicto con otro profesor o admin
@@ -53,7 +61,7 @@ class ReservasService {
         }
       }
 
-      // Si es admin, puede sobreescribir (asumimos comportamiento similar a profesor o total)
+      // Si es admin, puede sobreescribir
       if (userRole === 'admin') {
         await this.reservaDAO.deleteById(conflict._id, conflict.userId);
       }
@@ -63,19 +71,16 @@ class ReservasService {
     return this.reservaDAO.create(dto);
   }
 
-  async obtenerTodas(user) {
-    let reservas;
-    if (user.role === 'admin') {
-      reservas = await this.reservaDAO.findAll();
-    } else {
-      reservas = await this.reservaDAO.findByUser(user.id);
-    }
+  /**
+   * Obtiene todas las reservas para mostrar disponibilidad.
+   * - Admin: Ve todo.
+   * - Dueño: Ve su reserva completa.
+   * - Otros: Ven datos restringidos (fecha, hora, laboratorio, materia, profesor).
+   */
+  async getAvailability(user) {
+    const reservas = await this.reservaDAO.findAll();
 
-    // Enrich with Subject and Professor info (and User info for admin)
-    // We need to access Postgres DAOs. 
-    // Ideally we inject them, but for now we instantiate them here or better, use AcademicService if possible.
-    // Given the architecture, let's instantiate SubjectPostgresDAO directly here as we do in AcademicService.
-    // Note: This creates a tight coupling but fits the current pattern.
+    // Instantiate DAOs (Dependencies)
     const SubjectPostgresDAO = require("../daos/postgres/SubjectPostgresDAO");
     const subjectDAO = new SubjectPostgresDAO();
     const UserPostgresDAO = require("../daos/postgres/UserPostgresDAO");
@@ -84,49 +89,69 @@ class ReservasService {
     const enrichedReservas = await Promise.all(reservas.map(async (r) => {
       const rObj = r.toObject ? r.toObject() : r;
 
-      // Enrich Subject/Professor
+      // 1. Data Enrichment (Subject/Professor)
       let materia = "No especificada";
       let profesor = "No asignado";
 
       if (rObj.subjectId) {
         try {
-          // console.log("Enriching reservation:", rObj._id, "SubjectID:", rObj.subjectId);
           const subject = await subjectDAO.findById(rObj.subjectId);
-          if (subject) {
-            materia = subject.name;
-          } else {
-            console.warn(`Subject not found for ID: ${rObj.subjectId}`);
-          }
+          if (subject) materia = subject.name;
 
           const prof = await subjectDAO.getProfessorBySubject(rObj.subjectId);
-          if (prof) {
-            profesor = prof.nombre;
-          } else {
-            // It is possible a subject has no professor assigned
-          }
+          if (prof) profesor = prof.nombre;
         } catch (err) {
           console.error("Error enriching reservation:", err.message);
         }
-      } else {
-        console.warn("Reserva without subjectId:", rObj._id);
       }
 
-      // Enrich User (for Admin)
-      let usuario = { nombre: 'Desconocido' };
-      if (user.role === 'admin' && rObj.userId) {
+      // 2. User Info (For Admins AND Professors to check priority)
+      let usuario = undefined;
+      let ownerRole = 'student'; // Default prediction
+
+      if (rObj.userId) {
         const u = await userDAO.findById(rObj.userId);
-        if (u) usuario = { nombre: u.nombre, email: u.email, role: u.role };
+        if (u) {
+          ownerRole = u.role;
+          if (user.role === 'admin') {
+            usuario = { nombre: u.nombre, email: u.email, role: u.role };
+          }
+        }
       }
+
+      // 3. Sanitization
+      const isOwner = String(rObj.userId) === String(user.id);
+      const isAdmin = user.role === 'admin';
+      const isProfessor = user.role === 'professor';
+      const showDetails = isOwner || isAdmin;
+
+      // Expose ownerRole only to Professors (to know if they can claim) or Admins
+      const exposedOwnerRole = (isProfessor || isAdmin) ? ownerRole : undefined;
 
       return {
-        ...rObj,
-        materia,
-        profesor,
-        usuario // Only relevant for admin
+        _id: rObj._id,
+        userId: rObj.userId, // Always return ID so frontend can check isMine
+        laboratorio: rObj.laboratorio,
+        fecha: rObj.fecha,
+        horaInicio: rObj.horaInicio,
+        horaFin: rObj.horaFin,
+        motivo: showDetails ? rObj.motivo : 'Reservado', // Mask motif
+        actividad: rObj.actividad || 'clase normal',
+        materia,  // Public info
+        profesor, // Public info
+        usuario,  // Only admin
+        subjectId: rObj.subjectId,
+        createdAt: rObj.createdAt, // For 10-min rule check on frontend
+        ownerRole: exposedOwnerRole // For priority check
       };
     }));
 
     return enrichedReservas;
+  }
+
+  // Legacy support or specific use
+  async obtenerTodas(user) {
+    return this.getAvailability(user);
   }
 
   // Se mantiene por compatibilidad, pero preferir usar obtenerTodas
@@ -146,8 +171,8 @@ class ReservasService {
     return doc;
   }
 
-  /** Actualiza una reserva del usuario autenticado. */
-  async actualizar(userId, reservaId, data) {
+  /** Actualiza una reserva. Admin puede editar cualquiera. */
+  async actualizar(user, reservaId, data) {
     const { laboratorio, fecha, horaInicio, horaFin } = data;
 
     // Solo validamos lo que viene en el body (update parcial)
@@ -161,9 +186,17 @@ class ReservasService {
       throw new Error("Rango de horas inválido (horaFin debe ser mayor a horaInicio)");
     }
 
-    const dto = new ReservaDTO({ userId, laboratorio, fecha, horaInicio, horaFin, motivo: data.motivo });
-    const updated = await this.reservaDAO.updateById(reservaId, userId, dto);
-    if (!updated) throw new Error("Reserva no encontrada");
+    const userIdToCheck = user.role === 'admin' ? null : user.id;
+
+    // El DTO lleva los datos a actualizar. No cambiamos el userId.
+    const dto = new ReservaDTO({ ...data });
+
+    // Si queremos preservar el userId en el DTO por validación del DAO, 
+    // podríamos necesitarlo, pero el DAO solo usa los campos definidos en DTO para $set.
+    // ReservaDTO constructor filters fields? Let's assume it just assigns.
+
+    const updated = await this.reservaDAO.updateById(reservaId, userIdToCheck, dto);
+    if (!updated) throw new Error("Reserva no encontrada o no tienes permiso");
     return updated;
   }
 

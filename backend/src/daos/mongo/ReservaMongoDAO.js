@@ -17,7 +17,8 @@ class ReservaMongoDAO extends ReservaDAO {
       horaFin: reservaDTO.horaFin,
       motivo: reservaDTO.motivo,
       subjectId: reservaDTO.subjectId,
-      parallelId: reservaDTO.parallelId
+      parallelId: reservaDTO.parallelId,
+      actividad: reservaDTO.actividad || "clase normal"
     });
     return doc;
   }
@@ -49,6 +50,7 @@ class ReservaMongoDAO extends ReservaDAO {
     if (reservaDTO.horaInicio !== undefined) update.horaInicio = reservaDTO.horaInicio;
     if (reservaDTO.horaFin !== undefined) update.horaFin = reservaDTO.horaFin;
     if (reservaDTO.motivo !== undefined) update.motivo = reservaDTO.motivo;
+    if (reservaDTO.actividad !== undefined) update.actividad = reservaDTO.actividad;
 
     const query = { _id: id };
     if (userId) query.userId = userId;

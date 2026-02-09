@@ -8,6 +8,7 @@ const ReservaSchema = new mongoose.Schema(
     horaInicio: { type: String, required: true },
     horaFin: { type: String, required: true },
     motivo: { type: String, default: "" },
+    actividad: { type: String, default: "clase normal" },
     subjectId: { type: String, required: false }, // Required logic handled in service
     parallelId: { type: String, required: false } // Optional for professors
   },

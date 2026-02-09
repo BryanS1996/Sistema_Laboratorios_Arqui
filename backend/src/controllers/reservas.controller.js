@@ -16,9 +16,28 @@ async function crear(req, res) {
   }
 }
 
+async function listarDisponibilidad(req, res) {
+  try {
+    const docs = await reservasService.getAvailability(req.user);
+    return res.json(docs);
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+}
+
 async function misReservas(req, res) {
-  const docs = await reservasService.obtenerTodas(req.user);
-  return res.json(docs);
+  // Ahora misReservas trae SOLO las del usuario, sin importar rol, para la vista "Mis Reservas"
+  const docs = await reservasService.misReservas(req.user.id);
+  // Podríamos querer enriquecerlas también? Sí, mejor usamos getAvailability pero filtrando?
+  // O mejor, actualizamos misReservas en servicio para enriquecer.
+  // Por ahora, para "Mis Reservas" el usuario quiere ver su historial.
+  // Si usamos misReservas del DAO, falta la info de Materia.
+  // Reutilicemos getAvailability y filtremos en memoria o en servicio.
+
+  // Opción rápida: Usar getAvailability y filtrar.
+  const all = await reservasService.getAvailability(req.user);
+  const mine = all.filter(r => String(r.userId) === String(req.user.id));
+  return res.json(mine);
 }
 
 async function obtener(req, res) {
@@ -32,40 +51,11 @@ async function obtener(req, res) {
 
 async function actualizar(req, res) {
   try {
-    // Si es admin, podría actualizar cualquier reserva, pero por ahora mantenemos lógica de propietario
-    // o podríamos adaptar similar a eliminar.
-    // El requerimiento decía "control total sobre reservas (crear, editar, eliminar)".
-    // Asumamos que admin puede editar cualquiera.
-    const userId = req.user.role === 'admin' ? null : req.user.id;
-
-    // Service.actualizar recibe (userId, reservaId, data). Si pasamos userId=null, el DAO ya lo soporta.
-    // Pero Service.actualizar tiene validación? No, solo llama a DAO.
-    // Simplemente llamamos directo:
-    // (Nota: Service.actualizar hace new ReservaDTO({ userId... }) -> si userId es null, el DTO queda con null.
-    // Eso está bien para el update, no cambia el userId de la reserva a menos que lo pasemos.)
-
-    // Un detalle: ReservasService.actualizar crea un DTO con el userId.
-    // Si userId es null, el DTO tendrá userId: null.
-    // El DAO usa $set: update. Si el DTO no tiene userId en 'reservaDTO' (que son los campos a update), no pasa nada.
-    // Pero updateById(id, userId, dto) usa userId para el Query { userId: userId }.
-
-    // Vamos a tener que ajustar el Service para soportar admin en actualizar también, pero por brevedad
-    // y dado que 'eliminar' era lo crítico, dejemos actualizar al propietario por ahora o
-    // hagamos un pequeño hack/fix temporal si se requiere.
-    // El usuario pidió "full control".
-    // Vamos a pasar req.user.id si no es admin, o null si es admin.
-
-    // PRECAUCIÓN: Service.actualizar espera (userId, reservaId, data).
-    // Si paso null, el DTO se crea con userId=null.
-    // En el DAO, updateById recibe DTO.
-    // El DAO extrae campos del DTO. El userId del DTO NO se usa para el update ($set).
-    // Así que es seguro pasar null como userId para bypass el check de propiedad.
-
-    const userIdToCheck = req.user.role === 'admin' ? null : req.user.id;
-    const doc = await reservasService.actualizar(userIdToCheck, req.params.id, req.body);
+    // Pasamos el usuario completo para que el servicio decida si permite la edición (Admin vs Owner)
+    const doc = await reservasService.actualizar(req.user, req.params.id, req.body);
     return res.json(doc);
   } catch (e) {
-    const status = e.message === "Reserva no encontrada" ? 404 : 400;
+    const status = e.message.includes("no encontrada") || e.message.includes("permiso") ? 404 : 400;
     return res.status(status).json({ message: e.message });
   }
 }
@@ -84,4 +74,4 @@ async function eliminar(req, res) {
   return res.json({ deleted: ok });
 }
 
-module.exports = { crear, misReservas, obtener, actualizar, reporteMine, eliminar };
+module.exports = { crear, misReservas, obtener, actualizar, reporteMine, eliminar, listarDisponibilidad };

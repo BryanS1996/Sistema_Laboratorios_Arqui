@@ -8,9 +8,11 @@ const {
   actualizar,
   reporteMine,
   eliminar,
+  listarDisponibilidad
 } = require("../controllers/reservas.controller");
 
 router.use(verifyToken);
+router.get("/", listarDisponibilidad); // Nueva ruta para disponibilidad pública
 router.post("/", crear);
 router.get("/mine", misReservas);
 router.get("/mine/report", reporteMine);

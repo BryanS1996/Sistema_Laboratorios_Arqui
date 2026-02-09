@@ -39,10 +39,23 @@ class SchedulesPostgresDAO {
         return rows;
     }
 
+    async findByLab(labId) {
+        const pool = getPool();
+        const { rows } = await pool.query(
+            `SELECT s.*, p.name as parallel_name, sub.name as subject_name
+       FROM schedules s
+       JOIN parallels p ON s.parallel_id = p.id
+       JOIN subjects sub ON p.subject_id = sub.id
+       WHERE s.lab_id = $1`,
+            [labId]
+        );
+        return rows;
+    }
+
     async findAll() {
         const pool = getPool();
         const { rows } = await pool.query(`
-        SELECT s.*, p.name as parallel_name, l.nombre as lab_name, sub.name as subject_name
+        SELECT s.*, p.name as parallel_name, l.nombre as lab_name, sub.name as subject_name, p.subject_id
         FROM schedules s
         JOIN laboratories l ON s.lab_id = l.id
         JOIN parallels p ON s.parallel_id = p.id

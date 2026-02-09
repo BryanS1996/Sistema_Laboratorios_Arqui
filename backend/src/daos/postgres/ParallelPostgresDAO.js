@@ -74,6 +74,19 @@ class ParallelPostgresDAO {
         );
         return rows;
     }
+
+    async findNamesBySemester(semesterId) {
+        const pool = getPool();
+        const { rows } = await pool.query(
+            `SELECT DISTINCT p.name 
+             FROM parallels p 
+             JOIN subjects s ON p.subject_id = s.id 
+             WHERE s.semester_id = $1 
+             ORDER BY p.name`,
+            [semesterId]
+        );
+        return rows;
+    }
 }
 
 module.exports = ParallelPostgresDAO;
