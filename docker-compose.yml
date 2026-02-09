@@ -13,9 +13,6 @@ services:
       - POSTGRES_USER=lab
       - POSTGRES_PASSWORD=lab
       - POSTGRES_DB=labdb
-      - PORT=3000
-      - MONGODB_URI=mongodb://mongo:27017/gestor_lab
-      - CORS_ORIGIN=http://localhost:5173
     depends_on:
       - mongo
     volumes:
