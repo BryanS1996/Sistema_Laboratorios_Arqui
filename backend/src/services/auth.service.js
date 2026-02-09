@@ -1,16 +1,21 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UserDTO = require("../dtos/UserDTO");
-const UserDAO = require("../daos/firestore/UserFirestoreDAO");
+// Remove hardcoded Firestore DAO
+const { getFactory } = require("../factories");
 const RefreshTokenService = require("./refreshToken.service");
 const AuditService = require("./audit.service");
 const { determineRole } = require("../utils/roleAssignment");
 const { isValidEmail, normalizeEmail } = require("../utils/validators");
 
 class AuthService {
+  constructor() {
+    this.userDAO = getFactory().createUserDAO();
+  }
 
 
-  async register({ email, password, nombre }, req = null) {
+
+  async register({ email, password, nombre, semesterId, parallelName, role, subjectIds }, req = null) {
     if (!email || !password || !nombre) {
       throw new Error("Faltan campos: email, password, nombre");
     }
@@ -20,6 +25,7 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
+<<<<<<< HEAD
     // 1. Check if user exists in Firestore
     const exists = await UserDAO.findByEmail(emailNorm);
     if (exists) throw new Error("Email ya registrado (en base de datos local)");
@@ -59,10 +65,55 @@ class AuthService {
       email: emailNorm, // We keep 'email' as standard. 'correo' in DB is legacy/inconsistent.
       nombre,
       rol: role // Saving as 'rol' to match Firestore consistency
+=======
+    const exists = await this.userDAO.findByEmail(emailNorm);
+    if (exists) throw new Error("Email ya registrado");
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Use provided role or default to student. 
+    // Secure this if public registration should not allow 'admin' without extra checks.
+    // For now, allow 'student' or 'professor'.
+    const finalRole = (role === 'professor') ? 'professor' : 'student';
+
+    const user = await this.userDAO.create({
+      email: emailNorm,
+      passwordHash,
+      nombre,
+      role: finalRole
+>>>>>>> test
     });
 
+    // Auto-enroll if student data provided
+    if (finalRole === 'student' && semesterId && parallelName) {
+      try {
+        await this.userDAO.updateStudentSemester(user.id, semesterId, parallelName);
+      } catch (e) {
+        console.error("Error auto-enrolling student:", e);
+        // Don't fail registration if enrollment fails, but log it
+      }
+    }
+
+    // Assign subjects if professor
+    if (finalRole === 'professor' && subjectIds && subjectIds.length > 0) {
+      try {
+        const SubjectPostgresDAO = require("../daos/postgres/SubjectPostgresDAO");
+        const subjectDAO = new SubjectPostgresDAO();
+        await subjectDAO.updateProfessorAssignments(user.id, subjectIds);
+      } catch (e) {
+        console.error("Error assigning subjects to professor:", e);
+      }
+    }
+
     // Log registration
-    await AuditService.log(user.id, AuditService.ACTIONS.REGISTER, null, null, { email: emailNorm }, req);
+    await AuditService.log(
+      user.id,
+      AuditService.ACTIONS.REGISTER,
+      null,
+      null,
+      { email: emailNorm, semesterId, parallelName, role: finalRole, subjectIds },
+      req
+    );
 
     return new UserDTO(user);
   }
@@ -78,12 +129,21 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
+<<<<<<< HEAD
     // 1. Verify credentials with Firebase REST API (Identity Toolkit)
     // We need the API KEY here. It's safe on backend.
     const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
     if (!apiKey) {
       console.error("Falta FIREBASE_API_KEY en variables de entorno del backend");
       throw new Error("Error de configuración del servidor (API Key missing)");
+=======
+    const user = await this.userDAO.findByEmail(emailNorm);
+    if (!user) throw new Error("Credenciales inválidas");
+
+    // Check if user has password (might be SSO-only user)
+    if (!user.passwordHash) {
+      throw new Error("Esta cuenta usa inicio de sesión social. Por favor usa Google/GitHub/Microsoft.");
+>>>>>>> test
     }
 
     const verifyUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
@@ -164,7 +224,7 @@ class AuthService {
     );
 
     // Update last login
-    await UserDAO.updateLastLogin(user.id);
+    await this.userDAO.updateLastLogin(user.id);
 
     // Log login
     await AuditService.log(user.id, AuditService.ACTIONS.LOGIN, null, null, {}, req);
@@ -178,10 +238,11 @@ class AuthService {
 
 
   async me(userId) {
-    const user = await UserDAO.findById(userId);
+    const user = await this.userDAO.findById(userId);
     if (!user) throw new Error("Usuario no encontrado");
     return new UserDTO(user);
   }
+
 
   /**
    * Logout user - revoke refresh token

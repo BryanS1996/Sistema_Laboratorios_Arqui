@@ -44,6 +44,10 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = (userData) => {
+<<<<<<< HEAD
+=======
+        console.log('AuthContext.login called with:', userData);
+>>>>>>> test
         setUser(userData);
         cacheUser(userData);
     };

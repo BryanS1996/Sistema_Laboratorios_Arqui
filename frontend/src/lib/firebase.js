@@ -38,7 +38,7 @@ if (firebaseConfig.apiKey) {
 
 // Exportar seguro (puede ser undefined)
 export { auth };
-export default auth;
+// export default auth; // Avoid default export if named export is better, but usually useful.
 
 // Proveedores
 const googleProvider = new GoogleAuthProvider();
@@ -103,6 +103,18 @@ export async function registerWithEmail(email, password) {
 /**
  * Cerrar sesión de Firebase
  */
+export async function signOut() {
+    try {
+        if (auth) await firebaseSignOut(auth);
+    } catch (error) {
+        console.error('Error al cerrar sesión de Firebase:', error);
+        throw error;
+    }
+}
+
+export default auth;
+ * Cerrar sesión de Firebase
+    */
 export async function signOut() {
     try {
         await firebaseSignOut(auth);

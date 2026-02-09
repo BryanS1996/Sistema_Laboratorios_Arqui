@@ -16,6 +16,9 @@ class ReservaMongoDAO extends ReservaDAO {
       horaInicio: reservaDTO.horaInicio,
       horaFin: reservaDTO.horaFin,
       motivo: reservaDTO.motivo,
+      subjectId: reservaDTO.subjectId,
+      parallelId: reservaDTO.parallelId,
+      actividad: reservaDTO.actividad || "clase normal"
     });
     return doc;
   }
@@ -31,7 +34,12 @@ class ReservaMongoDAO extends ReservaDAO {
     return ReservaModel.findOne({ _id: id, userId });
   }
 
-  /** Actualiza una reserva por id y userId (update parcial). */
+  async findAll() {
+    await connectMongo();
+    return ReservaModel.find({}).sort({ createdAt: -1 });
+  }
+
+  /** Actualiza una reserva por id y userId (update parcial). Si userId es null, actualiza cualquiera (admin). */
   async updateById(id, userId, reservaDTO) {
     await connectMongo();
     const update = {};
@@ -42,9 +50,13 @@ class ReservaMongoDAO extends ReservaDAO {
     if (reservaDTO.horaInicio !== undefined) update.horaInicio = reservaDTO.horaInicio;
     if (reservaDTO.horaFin !== undefined) update.horaFin = reservaDTO.horaFin;
     if (reservaDTO.motivo !== undefined) update.motivo = reservaDTO.motivo;
+    if (reservaDTO.actividad !== undefined) update.actividad = reservaDTO.actividad;
+
+    const query = { _id: id };
+    if (userId) query.userId = userId;
 
     const doc = await ReservaModel.findOneAndUpdate(
-      { _id: id, userId },
+      query,
       { $set: update },
       { new: true }
     );
@@ -53,8 +65,27 @@ class ReservaMongoDAO extends ReservaDAO {
 
   async deleteById(id, userId) {
     await connectMongo();
-    const r = await ReservaModel.deleteOne({ _id: id, userId });
+    const query = { _id: id };
+    if (userId) query.userId = userId;
+    const r = await ReservaModel.deleteOne(query);
     return r.deletedCount === 1;
+  }
+
+  /**
+   * Encuentra reservas que solapen con el horario dado para un laboratorio específico.
+   * Retorna una lista de reservas conflictivas.
+   */
+  async findOverlapping(laboratorio, fecha, horaInicio, horaFin) {
+    await connectMongo();
+    // Solapamiento: (StartA < EndB) && (EndA > StartB)
+    return ReservaModel.find({
+      laboratorio,
+      fecha,
+      $and: [
+        { horaInicio: { $lt: horaFin } },
+        { horaFin: { $gt: horaInicio } }
+      ]
+    });
   }
 }
 

@@ -4,8 +4,14 @@ export default {
     './index.html',
     './src/**/*.{js,jsx}'
   ],
+  darkMode: 'class',
   theme: {
-    extend: {}
+    extend: {
+      fontFamily: {
+        sans: ['Outfit', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
+      }
+    }
   },
   plugins: []
 }
