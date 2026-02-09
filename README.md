@@ -259,7 +259,23 @@ sequenceDiagram
     *   Postgres en puerto `5432`
     *   MongoDB en puerto `27017`
     *   Mongo Express en puerto `8081` (Interfaz Mongo)
+    *   Mongo Express en puerto `8081` (Interfaz Mongo)
     *   pgAdmin en puerto `5050` (Interfaz Postgres)
+
+### 🔄 Restauración Automática de Base de Datos
+
+El sistema está configurado para restaurar automáticamente el archivo `backend/sql/academico.sql` al iniciar el contenedor de PostgreSQL **por primera vez**.
+
+Si deseas reiniciar la base de datos con estos datos:
+1.  Detén los contenedores y borra los volúmenes:
+    ```bash
+    docker-compose down -v
+    ```
+2.  Inicia nuevamente:
+    ```bash
+    docker-compose up --build
+    ```
+Esto ejecutará el script `academico.sql` después de la inicialización básica.
 
 ### Scripts de Utilidad (Backend)
 
