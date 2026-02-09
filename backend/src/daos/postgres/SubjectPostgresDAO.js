@@ -77,6 +77,18 @@ class SubjectPostgresDAO {
         );
         return rows;
     }
+
+    async getProfessorBySubject(subjectId) {
+        const pool = getPool();
+        const { rows } = await pool.query(
+            `SELECT u.id, u.nombre, u.email FROM users u
+             JOIN professor_assignments pa ON pa.professor_id = u.id
+             WHERE pa.subject_id = $1
+             LIMIT 1`,
+            [subjectId]
+        );
+        return rows[0]; // Returns { id, nombre, email } or undefined
+    }
 }
 
 module.exports = SubjectPostgresDAO;

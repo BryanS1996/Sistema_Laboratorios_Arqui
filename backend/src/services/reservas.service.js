@@ -64,35 +64,69 @@ class ReservasService {
   }
 
   async obtenerTodas(user) {
+    let reservas;
     if (user.role === 'admin') {
-      const reservas = await this.reservaDAO.findAll();
+      reservas = await this.reservaDAO.findAll();
+    } else {
+      reservas = await this.reservaDAO.findByUser(user.id);
+    }
 
-      // Enrich with user info
-      // 1. Get unique user IDs
-      const userIds = [...new Set(reservas.map(r => r.userId))];
+    // Enrich with Subject and Professor info (and User info for admin)
+    // We need to access Postgres DAOs. 
+    // Ideally we inject them, but for now we instantiate them here or better, use AcademicService if possible.
+    // Given the architecture, let's instantiate SubjectPostgresDAO directly here as we do in AcademicService.
+    // Note: This creates a tight coupling but fits the current pattern.
+    const SubjectPostgresDAO = require("../daos/postgres/SubjectPostgresDAO");
+    const subjectDAO = new SubjectPostgresDAO();
+    const UserPostgresDAO = require("../daos/postgres/UserPostgresDAO");
+    const userDAO = new UserPostgresDAO();
 
-      // 2. Fetch users from Postgres
-      // We need a method in UserDAO to find multiple by ID, or loop findById (cache it)
-      // optimization: loop for now as we don't have findByIds
-      const usersMap = {};
-      for (const uid of userIds) {
-        if (uid) {
-          const u = await this.userDAO.findById(uid);
-          if (u) usersMap[uid] = u;
+    const enrichedReservas = await Promise.all(reservas.map(async (r) => {
+      const rObj = r.toObject ? r.toObject() : r;
+
+      // Enrich Subject/Professor
+      let materia = "No especificada";
+      let profesor = "No asignado";
+
+      if (rObj.subjectId) {
+        try {
+          // console.log("Enriching reservation:", rObj._id, "SubjectID:", rObj.subjectId);
+          const subject = await subjectDAO.findById(rObj.subjectId);
+          if (subject) {
+            materia = subject.name;
+          } else {
+            console.warn(`Subject not found for ID: ${rObj.subjectId}`);
+          }
+
+          const prof = await subjectDAO.getProfessorBySubject(rObj.subjectId);
+          if (prof) {
+            profesor = prof.nombre;
+          } else {
+            // It is possible a subject has no professor assigned
+          }
+        } catch (err) {
+          console.error("Error enriching reservation:", err.message);
         }
+      } else {
+        console.warn("Reserva without subjectId:", rObj._id);
       }
 
-      // 3. Attach
-      return reservas.map(r => {
-        const rObj = r.toObject ? r.toObject() : r;
-        const u = usersMap[r.userId];
-        return {
-          ...rObj,
-          usuario: u ? { nombre: u.nombre, email: u.email, role: u.role } : { nombre: 'Desconocido' }
-        };
-      });
-    }
-    return this.reservaDAO.findByUser(user.id);
+      // Enrich User (for Admin)
+      let usuario = { nombre: 'Desconocido' };
+      if (user.role === 'admin' && rObj.userId) {
+        const u = await userDAO.findById(rObj.userId);
+        if (u) usuario = { nombre: u.nombre, email: u.email, role: u.role };
+      }
+
+      return {
+        ...rObj,
+        materia,
+        profesor,
+        usuario // Only relevant for admin
+      };
+    }));
+
+    return enrichedReservas;
   }
 
   // Se mantiene por compatibilidad, pero preferir usar obtenerTodas
