@@ -2,12 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
-<<<<<<< HEAD
-import Catalogo from './pages/Catalogo';
-import Reservas from './pages/Reservas';
-import Reportes from './pages/Reportes';
-import ProtectedRoute from './components/ProtectedRoute';
-=======
 // import Reservas from './pages/Reservas'; // Deprecated
 import CreateReservation from './pages/reservas/CreateReservation';
 import LaboratoryCatalog from './pages/reservas/LaboratoryCatalog';
@@ -17,33 +11,11 @@ import AcademicManagement from './pages/AcademicManagement';
 import UserManagement from './pages/UserManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicLayout from './components/PublicLayout';
->>>>>>> test
 
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
-<<<<<<< HEAD
-        <Route path="/" element={<Navigate to="/catalogo" replace />} />
-
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-
-        <Route
-          path="/catalogo"
-          element={
-            <ProtectedRoute>
-              <Catalogo />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/reservas"
-          element={
-            <ProtectedRoute>
-              <Reservas />
-=======
         <Route path="/" element={<Navigate to="/reservas/catalog" replace />} />
 
         <Route path="/login" element={
@@ -85,23 +57,15 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AcademicManagement />
->>>>>>> test
             </ProtectedRoute>
           }
         />
 
         <Route
-<<<<<<< HEAD
-          path="/reportes"
-          element={
-            <ProtectedRoute>
-              <Reportes />
-=======
           path="/admin/users"
           element={
             <ProtectedRoute requiredRole="admin">
               <UserManagement />
->>>>>>> test
             </ProtectedRoute>
           }
         />

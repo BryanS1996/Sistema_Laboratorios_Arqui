@@ -30,11 +30,7 @@ function determineRole(email) {
     }
 
     // Por defecto, todos los demás usuarios son estudiantes
-<<<<<<< HEAD
-    return 'estudiante';
-=======
     return 'student';
->>>>>>> test
 }
 
 /**

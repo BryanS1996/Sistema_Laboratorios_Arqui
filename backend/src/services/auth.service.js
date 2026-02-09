@@ -25,12 +25,12 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
-<<<<<<< HEAD
-    // 1. Check if user exists in Firestore
-    const exists = await UserDAO.findByEmail(emailNorm);
-    if (exists) throw new Error("Email ya registrado (en base de datos local)");
+    // 1. Check if user exists in local DB
+    const exists = await this.userDAO.findByEmail(emailNorm);
+    if (exists) throw new Error("Email ya registrado");
 
-    // 2. Create user in Firebase Authentication (using Admin SDK)
+    // 2. Create user in Firebase Authentication
+    // We import admin here to avoid circular dependency issues if any, or just standard import
     const { admin } = require('../config/firebase.config');
     let firebaseUid;
 
@@ -45,9 +45,7 @@ class AuthService {
       firebaseUid = userRecord.uid;
     } catch (error) {
       if (error.code === 'auth/email-already-exists') {
-        // If exists in Firebase but not local, we should arguably proceed to create local,
-        // but let's throw for now to avoid confusion or fetch the uid.
-        // Actually, let's fetch the user to get the UID if it exists.
+        // Try to fetch existing UID
         const userRecord = await admin.auth().getUserByEmail(emailNorm);
         firebaseUid = userRecord.uid;
       } else {
@@ -56,32 +54,16 @@ class AuthService {
       }
     }
 
-    // 3. Determine role
-    const role = determineRole(emailNorm);
-
-    // 4. Create user in Firestore (using firebaseUid as ID)
-    const user = await UserDAO.create({
-      id: firebaseUid,
-      email: emailNorm, // We keep 'email' as standard. 'correo' in DB is legacy/inconsistent.
-      nombre,
-      rol: role // Saving as 'rol' to match Firestore consistency
-=======
-    const exists = await this.userDAO.findByEmail(emailNorm);
-    if (exists) throw new Error("Email ya registrado");
-
+    // 3. Create in Local DB
     const passwordHash = await bcrypt.hash(password, 10);
-
-    // Use provided role or default to student. 
-    // Secure this if public registration should not allow 'admin' without extra checks.
-    // For now, allow 'student' or 'professor'.
     const finalRole = (role === 'professor') ? 'professor' : 'student';
 
     const user = await this.userDAO.create({
       email: emailNorm,
       passwordHash,
       nombre,
-      role: finalRole
->>>>>>> test
+      role: finalRole,
+      firebaseUid // Link local user to Firebase User
     });
 
     // Auto-enroll if student data provided
@@ -90,7 +72,6 @@ class AuthService {
         await this.userDAO.updateStudentSemester(user.id, semesterId, parallelName);
       } catch (e) {
         console.error("Error auto-enrolling student:", e);
-        // Don't fail registration if enrollment fails, but log it
       }
     }
 
@@ -129,21 +110,12 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
-<<<<<<< HEAD
     // 1. Verify credentials with Firebase REST API (Identity Toolkit)
     // We need the API KEY here. It's safe on backend.
     const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
     if (!apiKey) {
       console.error("Falta FIREBASE_API_KEY en variables de entorno del backend");
       throw new Error("Error de configuración del servidor (API Key missing)");
-=======
-    const user = await this.userDAO.findByEmail(emailNorm);
-    if (!user) throw new Error("Credenciales inválidas");
-
-    // Check if user has password (might be SSO-only user)
-    if (!user.passwordHash) {
-      throw new Error("Esta cuenta usa inicio de sesión social. Por favor usa Google/GitHub/Microsoft.");
->>>>>>> test
     }
 
     const verifyUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
@@ -186,20 +158,19 @@ class AuthService {
       throw new Error("Error al validar credenciales con proveedor de identidad");
     }
 
-    // 2. Sync/Get user from Firestore
-    // Even though Firebase authenticated them, we need our local Firestore User record for roles
-    let user = await UserDAO.findByEmail(emailNorm);
+    // 2. Sync/Get user from Local DB
+    let user = await this.userDAO.findByEmail(emailNorm);
 
     if (!user) {
-      // Edge case: User exists in Auth but not in Firestore 'users' collection
+      // Edge case: User exists in Auth but not in local DB
       // Could happen if created directly in console. Auto-create/sync it.
       const role = determineRole(emailNorm);
       // Create with correct fields
-      user = await UserDAO.create({
-        id: firebaseUser.localId, // Use Firebase UID
+      user = await this.userDAO.create({
         email: emailNorm,
         nombre: firebaseUser.displayName || emailNorm.split('@')[0],
-        rol: role, // Save as 'rol'
+        role: role,
+        firebaseUid: firebaseUser.localId,
         createdAt: new Date()
       });
     }

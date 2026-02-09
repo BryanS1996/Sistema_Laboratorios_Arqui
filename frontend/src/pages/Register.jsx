@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react'
-<<<<<<< HEAD
-import { useNavigate, Link } from 'react-router-dom'
-import { apiFetch, setToken } from '../lib/api'
-=======
 import { Link, useNavigate } from 'react-router-dom'
-import { apiFetch } from '../lib/api'
+import { apiFetch, setToken } from '../lib/api'
 import { getSemesters, getParallelNamesBySemester, getAllSubjects } from '../lib/academic'
 import { UCELogoImage } from '../components/UCELogoImage'
 import { Loader, User, BookOpen, GraduationCap } from 'lucide-react'
 import gsap from 'gsap'
->>>>>>> test
 
 export default function Register() {
   const navigate = useNavigate()
@@ -34,11 +29,6 @@ export default function Register() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-<<<<<<< HEAD
-    console.log('Register component mounted - v2')
-  }, [])
-
-=======
     // Animate register card entrance
     gsap.fromTo(".register-card",
       { opacity: 0, y: 20, scale: 0.98 },
@@ -78,7 +68,6 @@ export default function Register() {
     )
   }
 
->>>>>>> test
   async function onSubmit(e) {
     e.preventDefault()
     setError('')
@@ -111,12 +100,6 @@ export default function Register() {
 
     setLoading(true)
     try {
-<<<<<<< HEAD
-      // Registrar directamente en el backend (que se encarga de Firebase)
-      const r = await apiFetch('/auth/register', {
-        method: 'POST',
-        body: { email: emailNorm, password, nombre },
-=======
       const payload = {
         nombre,
         email: emailNorm,
@@ -134,7 +117,6 @@ export default function Register() {
       await apiFetch('/auth/register', {
         method: 'POST',
         body: payload,
->>>>>>> test
         auth: false
       })
 
@@ -157,18 +139,7 @@ export default function Register() {
       navigate('/reservas')
 
     } catch (err) {
-<<<<<<< HEAD
-      console.error('❌ Register error:', err)
-      let msg = err.message
-      if (msg.includes('Email ya registrado')) {
-        msg = 'El email ya está registrado.'
-      } else if (msg.includes('weak-password')) {
-        msg = 'La contraseña es muy débil (mínimo 6 caracteres).'
-      }
-      setError(msg)
-=======
       setError(err.message || 'Error al crear cuenta')
->>>>>>> test
     } finally {
       setLoading(false)
     }

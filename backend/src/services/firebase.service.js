@@ -1,10 +1,5 @@
 const { auth } = require('../config/firebase.config');
-<<<<<<< HEAD
-const SSOProviderDAO = require('../daos/firestore/SSOProviderFirestoreDAO');
-const UserDAO = require('../daos/firestore/UserFirestoreDAO');
-=======
 const { getFactory } = require("../factories");
->>>>>>> test
 const { determineRole } = require('../utils/roleAssignment');
 
 class FirebaseService {
@@ -35,25 +30,11 @@ class FirebaseService {
         // 2. Try finding by email (Linkage case)
         user = await this.userDAO.findByEmail(email);
 
-<<<<<<< HEAD
-        if (!user) {
-            // Create new user with role from whitelist
-            const role = determineRole(email);
-
-            user = await UserDAO.create({
-                email,
-                nombre: name || email.split('@')[0],
-                role, // Assigned from ADMIN_EMAILS whitelist
-                passwordHash: null // SSO users don't have password
-            });
-=======
         if (user) {
             // Link existing user to Firebase UID
             await this.userDAO.update(user.id, { firebaseUid: uid });
             return { user, isNewUser: false };
->>>>>>> test
         }
-
         // 3. Create new user
         const role = determineRole(email);
         user = await this.userDAO.create({

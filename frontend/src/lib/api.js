@@ -1,8 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-<<<<<<< HEAD
-console.log('🌐 API_URL configurado:', API_URL);
-=======
->>>>>>> test
+
 
 // Gestión de tokens
 let accessToken = null;
@@ -82,11 +79,7 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, retry 
 
   // Manejar 401 No autorizado - token expirado
   if (response.status === 401 && auth && retry) {
-<<<<<<< HEAD
-    const data = await response.json().catch(() => ({}));
-=======
     const data = await response.clone().json().catch(() => ({}));
->>>>>>> test
 
     // Verificar si es una expiración de token
     if (data.code === 'TOKEN_EXPIRED' || data.error?.includes('expirado')) {

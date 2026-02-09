@@ -1,52 +1,24 @@
 version: '3.8'
 
 services:
-<<<<<<< HEAD
-  backend:
-    build: ./backend
-=======
   # PostgreSQL Database
   postgres:
     image: postgres:16
     container_name: gestor_lab_postgres
-    environment:
-      POSTGRES_USER: lab
-      POSTGRES_PASSWORD: lab
-      POSTGRES_DB: labdb
->>>>>>> test
     ports:
       - "3000:3000"
     env_file:
       - ./backend/.env
     environment:
+      - POSTGRES_USER=lab
+      - POSTGRES_PASSWORD=lab
+      - POSTGRES_DB=labdb
       - PORT=3000
       - MONGODB_URI=mongodb://mongo:27017/gestor_lab
       - CORS_ORIGIN=http://localhost:5173
     depends_on:
       - mongo
     volumes:
-<<<<<<< HEAD
-      - ./backend/src:/app/src
-      - ./backend/package.json:/app/package.json
-      - ./backend/.env:/app/.env
-      - ./backend/serviceAccountKey.json:/app/serviceAccountKey.json:ro
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    env_file:
-      - ./frontend/.env
-    environment:
-      - VITE_API_URL=http://localhost:3000
-    depends_on:
-      - backend
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/vite.config.js:/app/vite.config.js
-      - ./frontend/package.json:/app/package.json
-      - ./frontend/.env:/app/.env
-=======
       - pg_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
@@ -56,16 +28,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
->>>>>>> test
 
   # MongoDB Database
   mongo:
-<<<<<<< HEAD
-    image: mongo:7.0
-=======
     image: mongo:7
     container_name: gestor_lab_mongo
->>>>>>> test
     ports:
       - "27017:27017"
     volumes:
@@ -78,19 +45,6 @@ services:
       timeout: 5s
       retries: 5
 
-<<<<<<< HEAD
-  mongo-express:
-    image: mongo-express
-    restart: always
-    ports:
-      - 8081:8081
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: root
-      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
-    depends_on:
-      - mongo
-=======
   # Mongo Express Web Interface
   mongo-express:
     image: mongo-express
@@ -175,15 +129,11 @@ services:
       # Montar código para hot-reload
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
->>>>>>> test
 
 # Volúmenes persistentes
 volumes:
-<<<<<<< HEAD
-=======
   pg_data:
     name: gestor_lab_pg_data
->>>>>>> test
   mongo_data:
     name: gestor_lab_mongo_data
 

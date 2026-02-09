@@ -1,9 +1,4 @@
-import { useState, useEffect } from 'react'
-<<<<<<< HEAD
-import { Link, useNavigate } from 'react-router-dom'
-=======
 import { useNavigate, Link } from 'react-router-dom'
->>>>>>> test
 import { apiFetch, setToken } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { UCELogoImage } from '../components/UCELogoImage'
@@ -21,12 +16,7 @@ export default function Login() {
   const [debugLog, setDebugLog] = useState([])
 
   useEffect(() => {
-    console.log('Login component mounted - v2')
-  }, [])
-
-  const addLog = (msg) => setDebugLog(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`])
-
-  useEffect(() => {
+    // Animate login card entrance
     gsap.fromTo(".login-card",
       { opacity: 0, y: 20, scale: 0.98 },
       { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power2.out" }
@@ -37,41 +27,14 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    setDebugLog([])
-    addLog('Iniciando login (Proxy Backend)...')
 
     try {
-      // Enviar credenciales directamente al backend
-      // El backend se encargará de validar con Firebase
-      addLog(`Enviando credenciales a /auth/login para: ${email}`)
-
       const r = await apiFetch('/auth/login', {
         method: 'POST',
         body: { email, password },
         auth: false
       })
-<<<<<<< HEAD
 
-      addLog('Respuesta recibida del backend')
-
-      if (!r.accessToken) {
-        throw new Error('No se recibió accessToken del servidor. Respuesta: ' + JSON.stringify(r))
-      }
-
-      addLog('Token de sesión recibido. Guardando...')
-      setToken(r.accessToken)
-
-      addLog('Login completado. Redirigiendo...')
-      setTimeout(() => {
-        navigate('/reservas')
-      }, 1000)
-
-    } catch (err) {
-      console.error('❌ Login error:', err)
-      const msg = err.message || 'Error al iniciar sesión'
-      addLog(`ERROR: ${msg}`)
-      setError(msg)
-=======
       setToken(r.accessToken)
       login(r.user)
       navigate('/reservas')
@@ -98,7 +61,6 @@ export default function Login() {
     } catch (err) {
       console.error(err)
       setError('Error al iniciar sesión con Google')
->>>>>>> test
     } finally {
       setLoading(false)
     }
@@ -113,66 +75,6 @@ export default function Login() {
           <div className="flex justify-center mb-4">
             <UCELogoImage className="w-20 h-auto drop-shadow-sm" />
           </div>
-<<<<<<< HEAD
-        ) : null}
-
-        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-gray-900"
-              placeholder="ejemplo@uce.edu.ec"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Contraseña</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-gray-900"
-              placeholder="••••••"
-            />
-          </div>
-
-          <button
-            disabled={loading}
-            className="w-full rounded-lg bg-gray-900 px-4 py-2 text-white font-medium hover:bg-gray-800 disabled:opacity-60"
-          >
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
-
-        <div className="mt-4 text-sm text-gray-600">
-          ¿No tienes cuenta?{' '}
-          <Link className="font-medium text-gray-900 underline" to="/register">
-            Regístrate
-          </Link>
-        </div>
-
-        {/* Debug Log Area */}
-        <div className="mt-6 p-4 bg-gray-100 rounded text-xs font-mono overflow-auto max-h-60 border border-gray-300">
-          <div className="font-bold border-b border-gray-300 pb-1 mb-2">Debug Log (Toma foto de esto si falla):</div>
-          {debugLog.length === 0 ? <div className="text-gray-400">Esperando acción...</div> : debugLog.map((log, i) => (
-            <div key={i} className="mb-1 border-b border-gray-200 pb-1 last:border-0">{log}</div>
-          ))}
-        </div>
-
-        <div className="mt-6 rounded-lg bg-gray-50 border p-3 text-xs text-gray-600">
-          <div className="font-semibold">Tip</div>
-          <div>Configura <span className="font-mono">VITE_API_URL</span> en <span className="font-mono">frontend/.env</span> si tu backend no está en localhost:3000.</div>
-=======
           <h1 className="text-blue-900 text-2xl font-bold tracking-tight">
             Bienvenido
           </h1>
@@ -245,7 +147,6 @@ export default function Login() {
               </Link>
             </div>
           </form>
->>>>>>> test
         </div>
       </div>
     </div>

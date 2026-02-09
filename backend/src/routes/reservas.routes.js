@@ -12,10 +12,7 @@ const {
 } = require("../controllers/reservas.controller");
 
 router.use(verifyToken);
-<<<<<<< HEAD
-=======
 router.get("/", listarDisponibilidad); // Nueva ruta para disponibilidad pública
->>>>>>> test
 router.post("/", crear);
 router.get("/mine", misReservas);
 router.get("/mine/report", reporteMine);

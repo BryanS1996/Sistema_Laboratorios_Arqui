@@ -8,10 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
  */
 export default function ProtectedRoute({ children, requiredRole = null }) {
   const { user, loading } = useAuth();
-<<<<<<< HEAD
-=======
   console.log('ProtectedRoute check:', { user, loading, path: window.location.pathname });
->>>>>>> test
 
   // Show loading state
   if (loading) {
