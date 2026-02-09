@@ -16,6 +16,8 @@ class ReservaMongoDAO extends ReservaDAO {
       horaInicio: reservaDTO.horaInicio,
       horaFin: reservaDTO.horaFin,
       motivo: reservaDTO.motivo,
+      subjectId: reservaDTO.subjectId,
+      parallelId: reservaDTO.parallelId
     });
     return doc;
   }
