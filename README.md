@@ -55,17 +55,17 @@ El sistema sigue una arquitectura de microservicios monolíticos (Modular Monoli
 
 ```mermaid
 graph TD
-    Client["Cliente React"] -->|HTTPS/REST| LB["Traefik / Nginx (Si aplica)"]
-    LB --> API["Backend Express API"]
+    Client["Cliente React"] -->|HTTPS/REST| LB["Balanceador de Carga (Nginx)"]
+    LB --> API["API Backend (Express)"]
     
     subgraph "Capa de Datos"
-        API -->|Lectura/Escritura| PG[("PostgreSQL: Core Data")]
-        API -->|Lectura/Escritura| MONGO[("MongoDB: Reservas")]
-        API -->|Verificación Token| FB["Firebase Auth"]
+        API -->|Lectura/Escritura| PG[("PostgreSQL: Datos Principales")]
+        API -->|Lectura/Escritura| MONGO[("MongoDB: Historial y Chat")]
+        API -->|Verificación Token| FB["Firebase Auth (Identidad)"]
     end
     
-    subgraph "Servicios Externos"
-        API -->|Backups/Files| B2["B2 Cloud Storage"]
+    subgraph "Almacenamiento Externo"
+        API -->|Archivos/Respaldos| B2["B2 Cloud Storage"]
     end
 ```
 
@@ -159,28 +159,28 @@ Implementamos una estrategia de "Lazy Migration" para soportar usuarios legados 
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant Usuario
     participant Backend
-    participant Postgres
+    participant BaseDatos as PostgreSQL
     participant Firebase
 
-    User->>Backend: Login(email, password)
-    Backend->>Postgres: Buscar Usuario por Email
+    Usuario->>Backend: Iniciar Sesión (email, clave)
+    Backend->>BaseDatos: Buscar Usuario por Email
     
-    alt Usuario tiene Hash en Postgres
-        Backend->>Backend: bcrypt.compare(password, hash)
-        alt Password Correcto
-            Backend->>User: Retorna JWT (Access + Refresh)
-        else Password Incorrecto
-            Backend->>User: Error 401
+    alt Usuario tiene Clave Local (Hash)
+        Backend->>Backend: Verificar Hash (bcrypt)
+        alt Clave Correcta
+            Backend->>Usuario: Retorna Token JWT (Acceso)
+        else Clave Incorrecta
+            Backend->>Usuario: Error 401 (No autorizado)
         end
-    else Usuario NO tiene Hash (Legado/Firebase)
+    else Usuario NO tiene Clave Local (Migración)
         Backend->>Firebase: Verificar Credenciales (REST API)
         alt Firebase OK
-            Backend->>Postgres: ACTUALIZAR Hash de Contraseña
-            Backend->>User: Retorna JWT
-        else Firebase Error
-            Backend->>User: Error 401
+            Backend->>BaseDatos: Guardar nueva clave (Hash)
+            Backend->>Usuario: Retorna Token JWT
+        else Error en Firebase
+            Backend->>Usuario: Error 401 (Credenciales inválidas)
         end
     end
 ```
