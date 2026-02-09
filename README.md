@@ -55,17 +55,17 @@ El sistema sigue una arquitectura de microservicios monolíticos (Modular Monoli
 
 ```mermaid
 graph TD
-    Client[Cliente React] -->|HTTPS/REST| LB[Traefik / Nginx (Si aplica)]
-    LB --> API[Backend Express API]
+    Client["Cliente React"] -->|HTTPS/REST| LB["Traefik / Nginx (Si aplica)"]
+    LB --> API["Backend Express API"]
     
     subgraph "Capa de Datos"
-        API -->|Lectura/Escritura| PG[(PostgreSQL: Core Data)]
-        API -->|Lectura/Escritura| MONGO[(MongoDB: Reservas)]
-        API -->|Verificación Token| FB[Firebase Auth]
+        API -->|Lectura/Escritura| PG[("PostgreSQL: Core Data")]
+        API -->|Lectura/Escritura| MONGO[("MongoDB: Reservas")]
+        API -->|Verificación Token| FB["Firebase Auth"]
     end
     
     subgraph "Servicios Externos"
-        API -->|Backups/Files| B2[B2 Cloud Storage]
+        API -->|Backups/Files| B2["B2 Cloud Storage"]
     end
 ```
 
