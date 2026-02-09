@@ -11,6 +11,7 @@ import AcademicManagement from './pages/AcademicManagement';
 import UserManagement from './pages/UserManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicLayout from './components/PublicLayout';
+import ChatPage from './pages/chat/ChatPage';
 
 export default function App() {
   return (
@@ -50,6 +51,13 @@ export default function App() {
             <MyReservations />
           </ProtectedRoute>
         } />
+
+        <Route path="/chat" element={
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        } />
+
         <Route path="/reservas" element={<Navigate to="/reservas/mine" replace />} />
 
         <Route

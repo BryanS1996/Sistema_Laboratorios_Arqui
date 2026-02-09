@@ -1,6 +1,5 @@
 require("dotenv").config();
 const app = require("./app");
-
 const { connectMongo } = require("./config/mongo");
 
 const port = Number(process.env.PORT || 3000);

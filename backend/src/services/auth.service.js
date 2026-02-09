@@ -8,6 +8,7 @@ const AuditService = require("./audit.service");
 const { determineRole } = require("../utils/roleAssignment");
 const { isValidEmail, normalizeEmail } = require("../utils/validators");
 
+
 class AuthService {
   constructor() {
     this.userDAO = getFactory().createUserDAO();
@@ -110,72 +111,82 @@ class AuthService {
       throw new Error("Email inválido");
     }
 
-    // 1. Verify credentials with Firebase REST API (Identity Toolkit)
-    // We need the API KEY here. It's safe on backend.
-    const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
-    if (!apiKey) {
-      console.error("Falta FIREBASE_API_KEY en variables de entorno del backend");
-      throw new Error("Error de configuración del servidor (API Key missing)");
-    }
-
-    const verifyUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
-
-    let firebaseUser;
-    try {
-      const response = await fetch(verifyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailNorm,
-          password: password,
-          returnSecureToken: true
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorCode = data.error?.message || 'LOGIN_FAILED';
-        if (errorCode === 'EMAIL_NOT_FOUND' || errorCode === 'INVALID_PASSWORD' || errorCode === 'INVALID_LOGIN_CREDENTIALS') {
-          throw new Error("Credenciales inválidas");
-        }
-        if (errorCode === 'USER_DISABLED') {
-          throw new Error("Usuario deshabilitado");
-        }
-        if (errorCode === 'PASSWORD_LOGIN_DISABLED') {
-          throw new Error("El inicio de sesión con contraseña no está habilitado en Firebase.");
-        }
-        throw new Error(`Error de autenticación: ${errorCode}`);
-      }
-
-      firebaseUser = data; // contains idToken, localId (uid), email, refreshToken
-    } catch (error) {
-      // If it's our custom error, rethrow. If fetch failed, wrap it.
-      if (error.message === "Credenciales inválidas" || error.message === "Usuario deshabilitado" || error.message.includes("habilitado")) {
-        throw error;
-      }
-      console.error("Firebase REST Login Error:", error);
-      throw new Error("Error al validar credenciales con proveedor de identidad");
-    }
-
-    // 2. Sync/Get user from Local DB
+    // 1. Try to find user in Local DB first
     let user = await this.userDAO.findByEmail(emailNorm);
+    let authenticatedLocally = false;
 
-    if (!user) {
-      // Edge case: User exists in Auth but not in local DB
-      // Could happen if created directly in console. Auto-create/sync it.
-      const role = determineRole(emailNorm);
-      // Create with correct fields
-      user = await this.userDAO.create({
-        email: emailNorm,
-        nombre: firebaseUser.displayName || emailNorm.split('@')[0],
-        role: role,
-        firebaseUid: firebaseUser.localId,
-        createdAt: new Date()
-      });
+    // 2. Validate against Postgres IF hash exists
+    if (user && user.passwordHash && !user.passwordHash.startsWith('$2a$10$dummy')) {
+      // Check password
+      const validPassword = await bcrypt.compare(password, user.passwordHash);
+      if (validPassword) {
+        authenticatedLocally = true;
+        console.log(`[DEBUG] Login: Local authentication successful for ${emailNorm}`);
+      } else {
+        // If local hash exists but password wrong, we COULD try Firebase (synced password change?)
+        // primarily we should fail, but for migration safety/SSO confusion, let's allow fallback 
+        // ONLY if the hash might be stale. But normally "Validate in Postgres" means TRUST Postgres.
+        console.log(`[DEBUG] Login: Local password mismatch for ${emailNorm}.`);
+        // We will fall through to Firebase check just in case pasword was changed in other system/reset
+      }
     }
 
-    // 3. Generate Backend JWTs
+    let firebaseUser = null;
+
+    if (!authenticatedLocally) {
+      // 3. Fallback: Verify with Firebase (Legacy users or Password Reset scenario)
+      const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+      if (!apiKey) throw new Error("Error de configuración del servidor (API Key missing)");
+
+      const verifyUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
+
+      try {
+        console.log(`[DEBUG] Attempting Firebase Login for: ${emailNorm} (Fallback/Migration)`);
+        const response = await fetch(verifyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailNorm, password: password, returnSecureToken: true })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          const errorCode = data.error?.message || 'LOGIN_FAILED';
+          if (['EMAIL_NOT_FOUND', 'INVALID_PASSWORD', 'INVALID_LOGIN_CREDENTIALS'].includes(errorCode)) {
+            throw new Error("Credenciales inválidas");
+          }
+          throw new Error(errorCode);
+        }
+        firebaseUser = data;
+        console.log('[DEBUG] Firebase Login Success. Syncing credentials...');
+
+        // 4. Update/Sync Password Hash to Postgres (Lazy Migration)
+        const newHash = await bcrypt.hash(password, 10);
+
+        if (user) {
+          // Update existing user with new hash
+          user = await this.userDAO.update(user.id, {
+            passwordHash: newHash,
+            firebaseUid: firebaseUser.localId
+          });
+        } else {
+          // Create new user (Sync)
+          const role = determineRole(emailNorm);
+          user = await this.userDAO.create({
+            email: emailNorm,
+            passwordHash: newHash,
+            nombre: firebaseUser.displayName || emailNorm.split('@')[0],
+            role: role,
+            firebaseUid: firebaseUser.localId
+          });
+        }
+
+      } catch (error) {
+        console.error("Login Error:", error.message);
+        throw new Error("Credenciales inválidas");
+      }
+    }
+
+    // 5. Generate Backend JWTs
     // Normalize 'rol' to 'role' for JWT standard usage in middleware
     const userRole = user.rol || user.role || 'estudiante';
 
@@ -198,7 +209,23 @@ class AuthService {
     await this.userDAO.updateLastLogin(user.id);
 
     // Log login
-    await AuditService.log(user.id, AuditService.ACTIONS.LOGIN, null, null, {}, req);
+    await AuditService.log(
+      user.id,
+      AuditService.ACTIONS.LOGIN,
+      null,
+      null,
+      { method: authenticatedLocally ? 'local' : 'firebase_sync' },
+      req
+    );
+
+    // Fetch Academic Load (Subjects/Parallels) for context in frontend
+    try {
+      const load = await this.userDAO.getAcademicLoad(user);
+      user.academicLoad = load;
+    } catch (err) {
+      console.error("Error fetching academic load:", err);
+      // Don't fail login, just log error
+    }
 
     return {
       accessToken,

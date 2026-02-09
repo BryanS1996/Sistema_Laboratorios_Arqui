@@ -123,6 +123,12 @@ export default function AllReservations() {
                                     ) : (
                                         upcoming.map(r => {
                                             const isMine = user && String(r.userId) === String(user.id);
+                                            // Check if reservation belongs to a subject assigned to this professor OR enrolled by this student
+                                            const isMySubject = user && user.academicLoad && r.subjectId && (
+                                                (user.role === 'professor' && user.academicLoad.some(s => String(s.id) === String(r.subjectId))) ||
+                                                (user.role === 'student' && user.academicLoad.some(s => String(s.subjectId) === String(r.subjectId)))
+                                            );
+
                                             // Solo Admin puede editar/borrar desde esta vista global
                                             const canEdit = isAdmin;
 
@@ -132,7 +138,9 @@ export default function AllReservations() {
                                                     className={`relative pl-3 rounded p-3 mb-2 transition-all duration-300 group
                                                         ${isMine
                                                             ? 'my-reservation bg-emerald-50 border-l-4 border-emerald-500 shadow-sm transform scale-[1.01]'
-                                                            : 'pl-3 before:absolute before:left-0 before:top-1 before:bottom-1 before:w-1 before:bg-gray-300 before:rounded-full'
+                                                            : isMySubject
+                                                                ? 'my-subject-reservation bg-indigo-50 border-l-4 border-indigo-500 shadow-sm'
+                                                                : 'pl-3 before:absolute before:left-0 before:top-1 before:bottom-1 before:w-1 before:bg-gray-300 before:rounded-full'
                                                         }`}
                                                 >
                                                     <div className="flex justify-between items-start">
@@ -144,13 +152,13 @@ export default function AllReservations() {
 
                                                             {/* Materia */}
                                                             {r.materia !== 'No especificada' && (
-                                                                <div className="text-xs font-bold text-gray-800 truncate mt-1">
+                                                                <div className={`text-xs font-bold truncate mt-1 ${isMySubject ? 'text-indigo-700' : 'text-gray-800'}`}>
                                                                     {r.materia}
                                                                 </div>
                                                             )}
 
                                                             {/* Motivo / Actividad */}
-                                                            <div className={`text-xs truncate mt-0.5 ${isMine ? 'text-emerald-700 font-bold text-sm' : 'text-gray-500'}`}>
+                                                            <div className={`text-xs truncate mt-0.5 ${isMine ? 'text-emerald-700 font-bold text-sm' : isMySubject ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}>
                                                                 {r.motivo || 'Reservado'}
                                                             </div>
 

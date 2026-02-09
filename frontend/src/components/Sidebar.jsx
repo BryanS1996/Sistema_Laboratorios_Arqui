@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Users,
   Settings,
+  MessageCircle,
   X // Close icon
 } from 'lucide-react'
 
@@ -51,6 +52,11 @@ export default function Sidebar({ isOpen, onClose }) {
             <NavLink to="/reservas/mine" className={getLinkClass} onClick={onClose}>
               <BookmarkCheck size={18} />
               Mis Reservas
+            </NavLink>
+            <div className="my-2 border-t border-gray-100"></div>
+            <NavLink to="/chat" className={getLinkClass} onClick={onClose}>
+              <MessageCircle size={18} />
+              Mensajes
             </NavLink>
           </div>
 

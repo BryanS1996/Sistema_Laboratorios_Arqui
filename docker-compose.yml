@@ -6,7 +6,7 @@ services:
     image: postgres:16
     container_name: gestor_lab_postgres
     ports:
-      - "3000:3000"
+      - "5432:5432"
     env_file:
       - ./backend/.env
     environment:

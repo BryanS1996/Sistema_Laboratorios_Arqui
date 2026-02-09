@@ -8,6 +8,7 @@ const reservasRoutes = require("./routes/reservas.routes");
 const reportsRoutes = require("./routes/reports.routes");
 const academicRoutes = require("./routes/academic.routes");
 const userRoutes = require("./routes/user.routes");
+const chatRoutes = require("./routes/chat.routes");
 
 // Aplicación Express (sin levantar el servidor). Permite testear/usar en server.js
 const app = express();
@@ -32,5 +33,6 @@ app.use("/reservas", reservasRoutes);
 app.use("/reports", reportsRoutes);
 app.use("/academic", academicRoutes);
 app.use("/users", userRoutes);
+app.use("/chat", chatRoutes);
 
 module.exports = app;

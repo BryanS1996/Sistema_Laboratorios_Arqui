@@ -143,7 +143,7 @@ class UserPostgresDAO extends UserDAO {
       // Get enrolled parallels and their schedules
       const { rows } = await pool.query(`
         SELECT p.id as parallel_id, p.name as parallel_name, 
-               s.name as subject_name, sem.name as semester_name,
+               s.id as subject_id, s.name as subject_name, sem.name as semester_name,
                sch.dia, sch.hora_inicio, sch.hora_fin, l.nombre as lab_name
         FROM student_enrollments se
         JOIN parallels p ON se.parallel_id = p.id
@@ -158,6 +158,7 @@ class UserPostgresDAO extends UserDAO {
       return rows.map(row => ({
         parallelId: row.parallel_id,
         parallelName: row.parallel_name,
+        subjectId: row.subject_id,
         subjectName: row.subject_name,
         semesterName: row.semester_name,
         schedule: row.dia ? {
@@ -251,6 +252,81 @@ class UserPostgresDAO extends UserDAO {
     } finally {
       client.release();
     }
+  }
+  /**
+   * Encuentra usuarios relacionados académicamente para el chat.
+   * - Student: Admin + Profesores (de sus materias) + Compañeros (de sus paralelos).
+   * - Professor: Admin + Estudiantes (de sus materias).
+   * - Admin: Todos.
+   */
+  async findRelatedUsers(userId, role) {
+    const pool = getPool();
+    let query = "";
+    const params = [userId];
+
+    if (role === 'admin') {
+      // Admin sees everyone (except self)
+      query = `SELECT id, email, nombre, role FROM users WHERE id != $1 ORDER BY nombre`;
+    } else if (role === 'student') {
+      // Student sees:
+      // 1. Admins
+      // 2. Professors assigned to subjects the student is enrolled in
+      // 3. Classmates in the same parallels
+      query = `
+        SELECT DISTINCT u.id, u.email, u.nombre, u.role 
+        FROM users u
+        WHERE u.id != $1 AND (
+          u.role = 'admin'
+          OR (
+            u.role = 'professor' AND u.id IN (
+              SELECT pa.professor_id 
+              FROM professor_assignments pa
+              JOIN subjects s ON pa.subject_id = s.id
+              JOIN parallels p ON s.id = p.subject_id
+              JOIN student_enrollments se ON p.id = se.parallel_id
+              WHERE se.student_id = $1
+            )
+          )
+          OR (
+            u.role = 'student' AND u.id IN (
+              SELECT se2.student_id
+              FROM student_enrollments se2
+              JOIN student_enrollments se1 ON se2.parallel_id = se1.parallel_id
+              WHERE se1.student_id = $1
+            )
+          )
+        )
+        ORDER BY u.nombre
+      `;
+    } else if (role === 'professor') {
+      // Professor sees:
+      // 1. Admins
+      // 2. Students enrolled in subjects assigned to the professor
+      // 3. Optional: Other Professors? (Let's keep it strict for now -> Only Students)
+      query = `
+        SELECT DISTINCT u.id, u.email, u.nombre, u.role
+        FROM users u
+        WHERE u.id != $1 AND (
+          u.role = 'admin'
+          OR (
+            u.role = 'student' AND u.id IN (
+              SELECT se.student_id
+              FROM student_enrollments se
+              JOIN parallels p ON se.parallel_id = p.id
+              JOIN subjects s ON p.subject_id = s.id
+              JOIN professor_assignments pa ON s.id = pa.subject_id
+              WHERE pa.professor_id = $1
+            )
+          )
+        )
+        ORDER BY u.nombre
+      `;
+    }
+
+    if (!query) return [];
+
+    const { rows } = await pool.query(query, params);
+    return rows;
   }
 }
 
