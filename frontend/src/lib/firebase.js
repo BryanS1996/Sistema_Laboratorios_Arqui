@@ -113,15 +113,4 @@ export async function signOut() {
 }
 
 export default auth;
- * Cerrar sesión de Firebase
-    */
-export async function signOut() {
-    try {
-        await firebaseSignOut(auth);
-    } catch (error) {
-        console.error('Error al cerrar sesión de Firebase:', error);
-        throw error;
-    }
-}
 
-export default auth;
