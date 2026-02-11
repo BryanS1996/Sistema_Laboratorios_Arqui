@@ -9,6 +9,7 @@ import AllReservations from './pages/reservas/AllReservations';
 import MyReservations from './pages/reservas/MyReservations';
 import AcademicManagement from './pages/AcademicManagement';
 import UserManagement from './pages/UserManagement';
+import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicLayout from './components/PublicLayout';
 import ChatPage from './pages/chat/ChatPage';
@@ -74,6 +75,15 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
