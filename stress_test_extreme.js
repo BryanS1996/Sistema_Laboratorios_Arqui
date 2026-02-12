@@ -1,22 +1,23 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-// Configuración del escenario de saturación
+// 🔥 CONFIGURACIÓN EXTREMA - SATURACIÓN TOTAL
 export const options = {
     stages: [
-        { duration: '10s', target: 50 },  // Ramp-up más agresivo
-        { duration: '2m', target: 100 },  // 100 usuarios concurrentes - ALTA CARGA
-        { duration: '10s', target: 0 },   // Bajada
+        { duration: '20s', target: 100 },   // Warm-up
+        { duration: '30s', target: 200 },   // Escalada rápida
+        { duration: '5m', target: 300 },    // 🔥 300 USUARIOS - SATURACIÓN
+        { duration: '20s', target: 0 },     // Cool-down
     ],
     thresholds: {
-        http_req_duration: ['p(95)<500'], // Con caché, debe ser SÚPER rápido
-        http_req_failed: ['rate<0.05'],   // Máximo 5% de error
+        http_req_duration: ['p(95)<2000'],  // Más permisivo (esperamos degradación)
+        http_req_failed: ['rate<0.15'],     // Permitir hasta 15% de errores
     },
 };
 
 const BASE_URL = 'http://localhost:3000';
 
-// Setup: Login para obtener token
+// Setup: Login
 export function setup() {
     const loginPayload = JSON.stringify({
         email: 'admin-labs@uce.edu.ec',
@@ -34,7 +35,7 @@ export function setup() {
     return { token: loginRes.json('accessToken') };
 }
 
-// Función principal: Ataque con polling
+// 🔥 ATAQUE EXTREMO
 export default function (data) {
     const params = {
         headers: {
@@ -43,25 +44,32 @@ export default function (data) {
         },
     };
 
-    // Alternamos entre los 2 endpoints con caché
+    // Alternamos entre endpoints cacheados
     const endpoints = [
-        '/reservas/mine',  // Caché: 5s, user-specific
-        '/reports',        // Caché: 30s, global
+        '/reservas/mine',
+        '/reports',
     ];
 
     const randomEndpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
     const res = http.get(`${BASE_URL}${randomEndpoint}`, params);
 
-    // Log de errores en primera iteración
-    if (res.status !== 200 && __ITER === 0) {
-        console.error(`🔴 Error en ${randomEndpoint}: ${res.status} - ${res.body}`);
+    // Log errores (solo primeras 5 iteraciones para no saturar logs)
+    if (res.status !== 200 && __ITER < 5) {
+        console.error(`🔴 Error en ${randomEndpoint}: ${res.status}`);
     }
 
     // Validaciones
     check(res, {
         '✅ Status 200': (r) => r.status === 200,
-        '⚡ Caché activa (< 100ms)': (r) => r.timings.duration < 100,
+        '⚡ Response < 2s': (r) => r.timings.duration < 2000,
+        '🚀 Caché activo < 200ms': (r) => r.timings.duration < 200,
     });
 
-    sleep(0.5); // Más requests/segundo
+    // 🔥 SLEEP MUY CORTO - MÁS PRESIÓN
+    sleep(0.1); // 10 requests/segundo por usuario
+}
+
+// Reporte al final
+export function teardown(data) {
+    console.log('🏁 Test de saturación completado');
 }

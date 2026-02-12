@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const { cacheMiddleware } = require("../middleware/cache.middleware");
 
 const { verifyToken } = require("../middleware/authJWT");
 const {
@@ -12,9 +13,9 @@ const {
 } = require("../controllers/reservas.controller");
 
 router.use(verifyToken);
-router.get("/", listarDisponibilidad); // Nueva ruta para disponibilidad pública
+router.get("/", listarDisponibilidad);
 router.post("/", crear);
-router.get("/mine", misReservas);
+router.get("/mine", cacheMiddleware('reservas', 5, (req) => req.user.id), misReservas);
 router.get("/mine/report", reporteMine);
 router.get("/:id", obtener);
 router.put("/:id", actualizar);

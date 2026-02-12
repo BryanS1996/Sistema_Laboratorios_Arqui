@@ -1,6 +1,7 @@
 require("dotenv").config();
 const app = require("./app");
 const { connectMongo } = require("./config/mongo");
+const redisService = require("./services/redis.service");
 
 const port = Number(process.env.PORT || 3000);
 
@@ -8,6 +9,9 @@ const port = Number(process.env.PORT || 3000);
   try {
     await connectMongo();
     console.log("✅ MongoDB connected");
+
+    await redisService.connect();
+    console.log("✅ Redis connected");
 
     app.listen(port, () => {
       console.log(`API up on :${port}`);

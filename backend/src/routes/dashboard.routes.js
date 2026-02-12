@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const dashboardController = require('../controllers/dashboard.controller');
 const { verifyToken } = require('../middleware/authJWT');
+const { cacheMiddleware } = require('../middleware/cache.middleware');
 
 // Todas las rutas requieren autenticación y rol admin
 router.use(verifyToken);
@@ -19,6 +20,11 @@ router.use(isAdmin);
 router.get('/stats', dashboardController.getStats);
 router.get('/top-users', dashboardController.getTopUsers);
 router.get('/common-hours', dashboardController.getCommonHours);
-router.get('/all', dashboardController.getAllStats);
+
+// Ruta principal con caché (polling cada 2s en frontend)
+router.get('/all',
+  cacheMiddleware('dashboard:all', 10, (req) => req.query.timeRange || 'month'),
+  dashboardController.getAllStats
+);
 
 module.exports = router;

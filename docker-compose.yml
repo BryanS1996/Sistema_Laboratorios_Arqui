@@ -99,6 +99,7 @@ services:
       - PG_PASSWORD=lab
       - PG_DATABASE=labdb
       - MONGO_URI=mongodb://mongo:27017/gestor_lab
+      - REDIS_URL=redis://redis:6379
     env_file:
       - ./backend/.env
     networks:
@@ -130,12 +131,44 @@ services:
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
 
+  # Redis - In-memory cache for high-performance data access
+  redis:
+    image: redis:7-alpine
+    container_name: gestor_lab_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - gestor_lab_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Redis Commander - Web UI for Redis monitoring
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: gestor_lab_redis_commander
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - gestor_lab_network
+
 # Volúmenes persistentes
 volumes:
   pg_data:
     name: gestor_lab_pg_data
   mongo_data:
     name: gestor_lab_mongo_data
+  redis_data:
+    name: gestor_lab_redis_data
 
 # Red personalizada
 networks:

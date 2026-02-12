@@ -91,63 +91,89 @@ function DashboardContent() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Encabezado */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard de Reservas</h1>
-          <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            Tiempo Real
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6 space-y-6">
+      {/* Encabezado Mejorado */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent">
+              Dashboard de Reservas
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">Análisis y métricas en tiempo real</p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-full text-sm font-semibold shadow-lg">
+            <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse shadow-lg"></div>
+            <span>LIVE</span>
           </div>
         </div>
 
-        {/* Selector de Rango de Tiempo */}
-        <div className="flex gap-2">
+        {/* Selector de Rango de Tiempo Mejorado */}
+        <div className="flex gap-2 bg-gray-100/80 p-1.5 rounded-xl">
           {['day', 'week', 'month'].map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
-                timeRange === range
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all duration-300 ${timeRange === range
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
+                : 'text-gray-600 hover:bg-white/60 hover:text-gray-900'
+                }`}
             >
-              {range === 'day' ? 'Hoy' : range === 'week' ? 'Esta semana' : 'Este mes'}
+              {range === 'day' ? 'Hoy' : range === 'week' ? 'Semana' : 'Mes'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Cuadrícula de Gráficos */}
+      {/* Cuadrícula de Gráficos Mejorados */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Reservas por Laboratorio - Gráfico Superior Ancho Completo (Abarcar 2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Reservas por Laboratorio</h2>
+        {/* Reservas por Laboratorio - Diseño Profesional */}
+        <div className="lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">Reservas por Laboratorio</h2>
+          </div>
           {stats?.byLab && stats.byLab.length > 0 ? (
             <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={stats.byLab}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
+              <BarChart data={stats.byLab} margin={{ top: 5, right: 20, left: 20, bottom: 90 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
                   dataKey="lab"
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11, fill: '#6b7280' }}
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={90}
+                  interval={0}
                 />
-                <YAxis />
-                <Tooltip 
+                <YAxis tick={{ fill: '#6b7280' }} />
+                <Tooltip
                   formatter={(value) => [`${value} reservas`, 'Cantidad']}
-                  labelFormatter={(label) => `Lab: ${label}`}
+                  labelFormatter={(label) => `Laboratorio: ${label}`}
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                 />
-                <Legend />
-                <Bar 
-                  dataKey="count" 
-                  fill="#3b82f6" 
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Bar
+                  dataKey="count"
+                  fill="url(#colorGradient)"
                   name="Reservas"
-                  animationDuration={500}
+                  animationDuration={800}
+                  radius={[8, 8, 0, 0]}
+                  barSize={40}
                 />
+                <defs>
+                  <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -155,44 +181,67 @@ function DashboardContent() {
           )}
         </div>
 
-        {/* Tarjeta Total de Reservas - Barra Lateral */}
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6 flex flex-col justify-center">
-          <p className="text-sm font-medium opacity-90">Total de Reservas</p>
-          <p className="text-5xl font-bold mt-4">{stats?.total || 0}</p>
-          <p className="text-sm mt-4 opacity-75">
-            {timeRange === 'day'
-              ? 'en las últimas 24h'
-              : timeRange === 'week'
-                ? 'en los últimos 7 días'
-                : 'en los últimos 30 días'}
-          </p>
+        {/* Tarjeta Total de Reservas - Diseño Premium */}
+        <div className="relative bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white rounded-2xl shadow-2xl p-6 overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <p className="text-sm font-semibold uppercase tracking-wider opacity-90">Total Reservas</p>
+            </div>
+            <p className="text-6xl font-black mt-2 drop-shadow-lg">{stats?.total || 0}</p>
+            <div className="mt-6 pt-4 border-t border-white/20">
+              <p className="text-sm font-medium opacity-90">
+                {timeRange === 'day' ? 'Últimas 24 horas' : timeRange === 'week' ? 'Últimos 7 días' : 'Últimos 30 días'}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Gráfico de Reservas por Día */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Reservas por Día</h2>
+        {/* Gráfico de Reservas por Día - Diseño Premium */}
+        <div className="lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Tendencia Diaria</h2>
+          </div>
           {stats?.byDay && stats.byDay.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={stats.byDay}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 11, fill: '#6b7280' }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
-                <YAxis />
-                <Tooltip />
+                <YAxis tick={{ fill: '#6b7280' }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                />
                 <Legend />
                 <Line
                   type="monotone"
                   dataKey="count"
-                  stroke="#3b82f6"
-                  dot={{ fill: '#3b82f6', r: 4 }}
-                  activeDot={{ r: 6 }}
+                  stroke="url(#lineGradient)"
+                  strokeWidth={3}
+                  dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 7, fill: '#059669' }}
                   name="Reservas"
                 />
+                <defs>
+                  <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#14b8a6" />
+                  </linearGradient>
+                </defs>
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -200,22 +249,30 @@ function DashboardContent() {
           )}
         </div>
 
-        {/* Top 5 Usuarios */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Top 5 Usuarios</h2>
+        {/* Top 5 Usuarios - Diseño Premium */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Top 5 Usuarios</h2>
+          </div>
           {topUsers && topUsers.length > 0 ? (
             <div className="space-y-3 max-h-72 overflow-y-auto">
               {topUsers.map((user, index) => (
-                <div key={user.userId} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
-                  <div className="flex items-center justify-center w-7 h-7 bg-blue-500 text-white rounded-full font-bold text-sm">
+                <div key={user.userId} className="group flex items-center gap-4 p-3 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm shadow-md bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate text-sm">{user.nombre}</p>
+                    <p className="font-semibold text-gray-900 truncate">{user.nombre}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-blue-600 text-sm">{user.reservations}</p>
+                  <div className="text-right">
+                    <p className="text-2xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">{user.count}</p>
+                    <p className="text-xs text-gray-400 font-medium">reservas</p>
                   </div>
                 </div>
               ))}
@@ -225,26 +282,58 @@ function DashboardContent() {
           )}
         </div>
 
-        {/* Horarios Más Frecuentes */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Horarios Frecuentes</h2>
+        {/* Horarios Más Frecuentes - Diseño Profesional */}
+        <div className="lg:col-span-3 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-gradient-to-br from-rose-500 to-pink-500 rounded-lg">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">Horarios Más Frecuentes (7:00 - 20:00)</h2>
+          </div>
           {commonHours && commonHours.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={commonHours.slice(0, 5)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey={(item) => `${item.horaInicio}-${item.horaFin}`}
-                  tick={{ fontSize: 10 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={70}
+            <ResponsiveContainer width="100%" height={340}>
+              <BarChart
+                data={commonHours.filter(h => {
+                  const hour = parseInt(h.hour?.split(':')[0] || h.hour);
+                  return hour >= 7 && hour <= 20;
+                })}
+                layout="horizontal"
+                margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis type="number" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                <YAxis
+                  dataKey="hour"
+                  type="category"
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  width={70}
                 />
-                <YAxis />
                 <Tooltip
-                  formatter={(value) => [`${value}`, 'Reservas']}
-                  labelFormatter={(label) => `${label}`}
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.15)'
+                  }}
+                  cursor={{ fill: 'rgba(244, 114, 182, 0.1)' }}
                 />
-                <Bar dataKey="count" fill="#10b981" name="Reservas" />
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Bar
+                  dataKey="count"
+                  fill="url(#pinkGradient)"
+                  name="Reservas"
+                  radius={[0, 8, 8, 0]}
+                  animationDuration={800}
+                  barSize={25}
+                />
+                <defs>
+                  <linearGradient id="pinkGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#ec4899" stopOpacity={0.9} />
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -253,20 +342,39 @@ function DashboardContent() {
         </div>
 
         {/* Horas por Hora del Día - Ancho Completo */}
-        <div className="lg:col-span-3 bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Distribución por Hora del Día</h2>
+        <div className="lg:col-span-3 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900">Distribución por Hora del Día</h2>
+          </div>
           {stats?.byHour && stats.byHour.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.byHour}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" tick={{ fontSize: 12 }} />
-                <YAxis />
+            <ResponsiveContainer width="98%" height={300}>
+              <BarChart data={stats.byHour} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="hour" tick={{ fontSize: 11, fill: '#6b7280' }} />
+                <YAxis tick={{ fill: '#6b7280' }} />
                 <Tooltip
-                  formatter={(value) => [`${value}`, 'Reservas']}
-                  labelFormatter={(label) => `${label}`}
+                  formatter={(value) => [`${value} reservas`, 'Cantidad']}
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                 />
-                <Legend />
-                <Bar dataKey="count" fill="#f59e0b" name="Reservas" />
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Bar
+                  dataKey="count"
+                  fill="url(#purpleGradient)"
+                  name="Reservas"
+                  radius={[8, 8, 0, 0]}
+                  barSize={28}
+                />
+                <defs>
+                  <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#6d28d9" stopOpacity={0.7} />
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           ) : (
