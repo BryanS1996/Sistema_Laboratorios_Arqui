@@ -42,30 +42,41 @@ Este proyecto es un sistema integral para la gestión, reserva y administración
 
 *   **Frontend**: React + Vite (Javascript), TailwindCSS, ShadcnUI, Lucide Icons.
 *   **Backend**: Node.js + Express.
+*   **Caché**: Redis 7 (In-memory storage para Dashboard y Reservas).
 *   **Base de Datos Relacional**: PostgreSQL (Usuarios, Académico, Laboratorios, Horarios).
-*   **Base de Datos No Relacional**: MongoDB (Reservas - Histórico y Alta Concurrencia).
-*   **Autenticación**: Firebase Auth (Identity Provider) + JWT (Session Management).
+*   **Base de Datos No Relacional**: MongoDB (Reservas - Histórico y Mensajería).
+*   **Autenticación**: Firebase Auth + JWT.
 *   **Infraestructura**: Docker & Docker Compose.
 
 ---
 
-## 🏗️ Arquitectura del Sistema
-
-El sistema sigue una arquitectura de microservicios monolíticos (Modular Monolith) contenedores.
+El sistema utiliza un diseño basado en patrones **DAO (Data Access Object)** y una **Factoría Híbrida** para gestionar la persistencia políglota, optimizada con una capa de caché de alto rendimiento.
 
 ```mermaid
 graph TD
-    Client["Cliente React"] -->|HTTPS/REST| LB["Balanceador de Carga (Nginx)"]
-    LB --> API["API Backend (Express)"]
+    User[Usuario / Navegador] -->|HTTPS| Frontend[Vite Frontend App]
     
-    subgraph "Capa de Datos"
-        API -->|Lectura/Escritura| PG[("PostgreSQL: Datos Principales")]
-        API -->|Lectura/Escritura| MONGO[("MongoDB: Historial y Chat")]
-        API -->|Verificación Token| FB["Firebase Auth (Identidad)"]
+    subgraph "Frontend Layer"
+        Frontend --> AuthCtx[AuthContext]
+        Frontend --> Query[TanStack Query]
+        Frontend --> Router[React Router]
+        Frontend --> Polling[Polling Service / Hook]
     end
     
-    subgraph "Almacenamiento Externo"
-        API -->|Archivos/Respaldos| B2["B2 Cloud Storage"]
+    subgraph "API Gateway / Backend"
+        Router -->|REST API Request| Express[Express Server]
+        Express --> AuthMw["Auth Middleware (JWT)"]
+        Express --> CacheMw[Cache Middleware]
+        CacheMw --> Controllers[Controllers Layer]
+    end
+    
+    subgraph "Data Persistence Layer"
+        Controllers --> Factory[Persistence Factory]
+        Factory -->|Decision Logic| HybridDao{Hybrid Factory}
+        
+        HybridDao -->|Postgres DAO| Postgres[(PostgreSQL)]
+        HybridDao -->|Mongo DAO| MongoDB[(MongoDB)]
+        CacheMw <-->|HIT/MISS| Redis[(Redis Cache)]
     end
 ```
 
@@ -141,15 +152,18 @@ Maneja las transacciones de reservas, permitiendo flexibilidad y rapidez en cons
 | Campo | Tipo | Descripción |
 | :--- | :--- | :--- |
 | `_id` | ObjectId | Identificador único |
-| `userId` | String (UUID) | ID del usuario (Postgres ID) |
-| `laboratorio` | String | ID del laboratorio (Postgres ID como string) |
-| `fecha` | String | Fecha en formato ISO (YYYY-MM-DD) |
-| `horaInicio` | String | Hora formato HH:mm |
-| `horaFin` | String | Hora formato HH:mm |
-| `motivo` | String | Descripción de la actividad |
-| `actividad` | String | Tipo: "clase normal", "examen", "práctica libre" |
-| `subjectId` | String | (Opcional) ID de la materia asociada |
-| `parallelId` | String | (Opcional) ID del paralelo asociado |
+| `userId` | String | ID del usuario (Postgres ID) |
+| `nombre` | String | Nombre del usuario (Caché visual) |
+| `laboratorio` | String | Nombre del laboratorio |
+| `fecha` | String | Formato YYYY-MM-DD |
+| `horaInicio` | String | Formato HH:mm |
+| `horaFin` | String | Formato HH:mm |
+
+### 3. Redis (Caché de Rendimiento)
+Utilizado para acelerar el Dashboard Administrativo y las consultas frecuentes de disponibilidad mediante:
+- **Middleware de Caché**: Intercepción de rutas GET.
+- **Polling Optimization**: Soporta actualizaciones cada 2s con mínimo impacto en DB.
+- **TTLs Dinámicos**: Entre 5 y 30 segundos según la volatilidad del dato.
 
 ---
 
@@ -258,7 +272,8 @@ sequenceDiagram
     *   Frontend en puerto `5173`
     *   Postgres en puerto `5432`
     *   MongoDB en puerto `27017`
-    *   Mongo Express en puerto `8081` (Interfaz Mongo)
+    *   Redis en puerto `6379`
+    *   Redis Commander en puerto `8082` (Web UI para Caché)
     *   Mongo Express en puerto `8081` (Interfaz Mongo)
     *   pgAdmin en puerto `5050` (Interfaz Postgres)
 
