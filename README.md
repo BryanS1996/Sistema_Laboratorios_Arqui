@@ -113,7 +113,7 @@ sequenceDiagram
     D-->>B: User ID & Rol
     
     B->>B: Generar JWT (Access & Refresh)
-    B-->>F: "Set-Cookie: jwt=...; HttpOnly"
+    B-->>F: Set-Cookie (HttpOnly JWT)
     
     F->>B: GET /auth/me (con Cookie)
     B-->>F: Retorna Datos de Usuario + Rol
