@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
-const RefreshTokenDAO = require('../daos/firestore/RefreshTokenFirestoreDAO');
+const RefreshTokenDAO = require('../daos/postgres/RefreshTokenPostgresDAO');
 
 class RefreshTokenService {
     /**

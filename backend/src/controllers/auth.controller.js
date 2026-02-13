@@ -1,5 +1,4 @@
 const authService = require('../services/auth.service');
-const firebaseService = require('../services/firebase.service');
 const refreshTokenService = require('../services/refreshToken.service');
 const { getFactory } = require("../factories");
 
@@ -46,18 +45,20 @@ class AuthController {
   }
 
   /**
-   * POST /auth/firebase - Login/Register with Firebase SSO
+   * POST /auth/google - Login/Register with Google OAuth
    */
-  async firebaseLogin(req, res) {
+  async googleLogin(req, res) {
     try {
       const { idToken } = req.body;
 
       if (!idToken) {
-        return res.status(400).json({ error: 'Firebase ID token requerido' });
+        return res.status(400).json({ error: 'Google ID token requerido' });
       }
 
-      // Handle Firebase sign-in (creates user if doesn't exist)
-      const { user, isNewUser } = await firebaseService.handleFirebaseSignIn(idToken);
+      const googleOAuthService = require('../services/google-oauth.service');
+
+      // Handle Google sign-in (creates user if doesn't exist)
+      const { user, isNewUser } = await googleOAuthService.handleGoogleSignIn(idToken, this.userDAO);
 
       // Generate JWT tokens
       const jwt = require('jsonwebtoken');
@@ -86,7 +87,7 @@ class AuthController {
 
       // Log SSO login
       const AuditService = require('../services/audit.service');
-      await AuditService.log(user.id, AuditService.ACTIONS.SSO_LOGIN, null, null, { isNewUser }, req);
+      await AuditService.log(user.id, AuditService.ACTIONS.SSO_LOGIN, null, null, { isNewUser, provider: 'google' }, req);
 
       res.json({
         accessToken,
@@ -94,8 +95,8 @@ class AuthController {
         isNewUser
       });
     } catch (error) {
-      console.error('Firebase login error:', error);
-      res.status(401).json({ error: error.message });
+      console.error('Google login error:', error);
+      res.status(401).json({ error: error.message || 'Error al iniciar sesión con Google' });
     }
   }
 

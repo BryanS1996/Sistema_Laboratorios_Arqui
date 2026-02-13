@@ -30,32 +30,7 @@ class AuthService {
     const exists = await this.userDAO.findByEmail(emailNorm);
     if (exists) throw new Error("Email ya registrado");
 
-    // 2. Create user in Firebase Authentication
-    // We import admin here to avoid circular dependency issues if any, or just standard import
-    const { admin } = require('../config/firebase.config');
-    let firebaseUid;
-
-    try {
-      const userRecord = await admin.auth().createUser({
-        email: emailNorm,
-        password: password,
-        displayName: nombre,
-        emailVerified: false,
-        disabled: false
-      });
-      firebaseUid = userRecord.uid;
-    } catch (error) {
-      if (error.code === 'auth/email-already-exists') {
-        // Try to fetch existing UID
-        const userRecord = await admin.auth().getUserByEmail(emailNorm);
-        firebaseUid = userRecord.uid;
-      } else {
-        console.error("Firebase Admin Create User Error:", error);
-        throw new Error(`Error al crear usuario en Firebase: ${error.message}`);
-      }
-    }
-
-    // 3. Create in Local DB
+    // 2. Create in Local DB (PostgreSQL)
     const passwordHash = await bcrypt.hash(password, 10);
     const finalRole = (role === 'professor') ? 'professor' : 'student';
 
@@ -64,7 +39,7 @@ class AuthService {
       passwordHash,
       nombre,
       role: finalRole,
-      firebaseUid // Link local user to Firebase User
+      firebaseUid: null // No longer using Firebase
     });
 
     // Auto-enroll if student data provided
@@ -134,56 +109,8 @@ class AuthService {
     let firebaseUser = null;
 
     if (!authenticatedLocally) {
-      // 3. Fallback: Verify with Firebase (Legacy users or Password Reset scenario)
-      const apiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
-      if (!apiKey) throw new Error("Error de configuración del servidor (API Key missing)");
-
-      const verifyUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
-
-      try {
-        console.log(`[DEBUG] Attempting Firebase Login for: ${emailNorm} (Fallback/Migration)`);
-        const response = await fetch(verifyUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailNorm, password: password, returnSecureToken: true })
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          const errorCode = data.error?.message || 'LOGIN_FAILED';
-          if (['EMAIL_NOT_FOUND', 'INVALID_PASSWORD', 'INVALID_LOGIN_CREDENTIALS'].includes(errorCode)) {
-            throw new Error("Credenciales inválidas");
-          }
-          throw new Error(errorCode);
-        }
-        firebaseUser = data;
-        console.log('[DEBUG] Firebase Login Success. Syncing credentials...');
-
-        // 4. Update/Sync Password Hash to Postgres (Lazy Migration)
-        const newHash = await bcrypt.hash(password, 10);
-
-        if (user) {
-          // Update existing user with new hash
-          user = await this.userDAO.update(user.id, {
-            passwordHash: newHash,
-            firebaseUid: firebaseUser.localId
-          });
-        } else {
-          // Create new user (Sync)
-          const role = determineRole(emailNorm);
-          user = await this.userDAO.create({
-            email: emailNorm,
-            passwordHash: newHash,
-            nombre: firebaseUser.displayName || emailNorm.split('@')[0],
-            role: role,
-            firebaseUid: firebaseUser.localId
-          });
-        }
-
-      } catch (error) {
-        console.error("Login Error:", error.message);
-        throw new Error("Credenciales inválidas");
-      }
+      // Password doesn't match - authentication failed
+      throw new Error("Credenciales inválidas");
     }
 
     // 5. Generate Backend JWTs

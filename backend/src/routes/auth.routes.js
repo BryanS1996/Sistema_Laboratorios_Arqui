@@ -6,8 +6,8 @@ const authController = require("../controllers/auth.controller");
 router.post("/register", (req, res) => authController.register(req, res));
 router.post("/login", (req, res) => authController.login(req, res));
 
-// Firebase SSO authentication
-router.post("/firebase", (req, res) => authController.firebaseLogin(req, res));
+// Google OAuth authentication (to be fully implemented in Phase 3)
+router.post("/google", (req, res) => authController.googleLogin(req, res));
 
 // Token management
 router.post("/refresh", (req, res) => authController.refresh(req, res));

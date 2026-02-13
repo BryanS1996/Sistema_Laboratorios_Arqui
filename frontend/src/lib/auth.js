@@ -1,7 +1,6 @@
 // Re-exportar funciones de autenticación desde api.js para compatibilidad hacia atrás
 export {
   login,
-  loginWithFirebase,
   register,
   logout,
   getCurrentUser,

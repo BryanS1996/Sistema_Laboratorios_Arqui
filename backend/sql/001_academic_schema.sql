@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS parallels (
 -- "la asignatura ya pertenece a algun profesor".
 -- Assuming Many-to-Many is safest.
 CREATE TABLE IF NOT EXISTS professor_subjects (
-    professor_id VARCHAR(255) NOT NULL, -- Firebase UID
+    professor_id VARCHAR(255) NOT NULL, -- Google ID
     subject_id INTEGER REFERENCES subjects(id) ON DELETE CASCADE,
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (professor_id, subject_id)
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS professor_subjects (
 -- Student Assignments (Student -> Parallel)
 -- "el estudiante pertenece a un paralelo"
 CREATE TABLE IF NOT EXISTS student_parallels (
-    student_id VARCHAR(255) NOT NULL, -- Firebase UID
+    student_id VARCHAR(255) NOT NULL, -- Google ID
     parallel_id INTEGER REFERENCES parallels(id) ON DELETE CASCADE,
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (student_id, parallel_id)

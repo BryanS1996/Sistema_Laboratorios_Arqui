@@ -4,7 +4,7 @@ import { apiFetch, setToken } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { UCELogoImage } from '../components/UCELogoImage'
 import { User, Loader } from 'lucide-react'
-import { signInWithGoogle } from '../lib/firebase'
+import GoogleLogin from '../components/GoogleLogin'
 import gsap from 'gsap'
 
 export default function Login() {
@@ -41,27 +41,6 @@ export default function Login() {
       navigate('/reservas')
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleGoogleLogin() {
-    setError('')
-    setLoading(true)
-    try {
-      const { idToken } = await signInWithGoogle()
-      const r = await apiFetch('/auth/firebase', {
-        method: 'POST',
-        body: { idToken },
-        auth: false
-      })
-      setToken(r.accessToken)
-      login(r.user)
-      navigate('/reservas')
-    } catch (err) {
-      console.error(err)
-      setError('Error al iniciar sesión con Google')
     } finally {
       setLoading(false)
     }
@@ -126,16 +105,17 @@ export default function Login() {
               {loading ? <Loader className="animate-spin w-5 h-5" /> : "Iniciar Sesión"}
             </button>
 
+            {/* Google OAuth Login */}
             <div className="mt-4 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95 duration-200"
-              >
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="G" />
-                Ingresar con Google
-              </button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-white text-gray-500">O continuar con</span>
+                </div>
+              </div>
+              <GoogleLogin />
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-100 flex flex-col gap-3">

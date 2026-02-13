@@ -1,16 +1,7 @@
-const AuditLogDAO = require('../daos/firestore/AuditLogFirestoreDAO');
+const AuditLogDAO = require('../daos/postgres/AuditLogPostgresDAO');
+const redisService = require('./redis.service');
 
 class AuditService {
-    /**
-     * Log an action
-     */
-    /**
-     * Expose ACTIONS constants on the instance
-     */
-    get ACTIONS() {
-        return AuditService.ACTIONS;
-    }
-
     /**
      * Log an action
      */
@@ -22,10 +13,27 @@ class AuditService {
             entityId,
             details,
             ipAddress: req ? this.getIpAddress(req) : null,
-            userAgent: req ? req.get('user-agent') : null
+            userAgent: req ? req.get('user-agent') : null,
+            createdAt: new Date()
         };
 
-        await AuditLogDAO.create(logEntry);
+        // 1. Persistence to Postgres (Main DB)
+        try {
+            await AuditLogDAO.create(logEntry);
+        } catch (err) {
+            console.error('Failed to persist audit log to Postgres:', err);
+        }
+
+        // 2. Dual-write to Redis for real-time reporting
+        try {
+            // Push to a "recent logs" list (keep last 100)
+            await redisService.lPush('recent_audit_logs', logEntry, 100);
+
+            // Publish to a real-time channel
+            await redisService.publish('audit_logs_channel', logEntry);
+        } catch (err) {
+            console.error('Failed to write audit log to Redis:', err);
+        }
     }
 
     /**

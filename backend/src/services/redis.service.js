@@ -79,6 +79,57 @@ class RedisService {
         }
     }
 
+    /**
+     * Push to a list and optionally trim it
+     */
+    async lPush(key, value, maxLength = null) {
+        if (!this.isConnected) return false;
+
+        try {
+            const serialized = JSON.stringify(value);
+            await this.client.lPush(key, serialized);
+
+            if (maxLength) {
+                await this.client.lTrim(key, 0, maxLength - 1);
+            }
+            return true;
+        } catch (error) {
+            console.error(`Error pushing to Redis list ${key}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Get range from a list
+     */
+    async lRange(key, start = 0, stop = -1) {
+        if (!this.isConnected) return null;
+
+        try {
+            const results = await this.client.lRange(key, start, stop);
+            return results.map(r => JSON.parse(r));
+        } catch (error) {
+            console.error(`Error getting Redis range ${key}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Publish a message to a channel
+     */
+    async publish(channel, message) {
+        if (!this.isConnected) return false;
+
+        try {
+            const serialized = JSON.stringify(message);
+            await this.client.publish(channel, serialized);
+            return true;
+        } catch (error) {
+            console.error(`Error publishing to Redis channel ${channel}:`, error);
+            return false;
+        }
+    }
+
     async disconnect() {
         if (this.client) {
             await this.client.quit();

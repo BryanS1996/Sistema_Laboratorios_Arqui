@@ -147,20 +147,6 @@ export async function login(email, password) {
 }
 
 /**
- * Login con Firebase SSO
- */
-export async function loginWithFirebase(idToken) {
-  const data = await apiFetch('/auth/firebase', {
-    method: 'POST',
-    body: { idToken },
-    auth: false
-  });
-
-  setToken(data.accessToken);
-  return { user: data.user, isNewUser: data.isNewUser };
-}
-
-/**
  * Registrar con email/contraseña
  */
 export async function register(email, password, nombre) {
