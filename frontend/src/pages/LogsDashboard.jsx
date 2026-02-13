@@ -1,13 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { apiFetch } from '../lib/api';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { apiFetch, setToken, clearTokens } from '../lib/api';
 import AppLayout from '../components/AppLayout';
-import { Clock, User, Activity, Filter, RefreshCw } from 'lucide-react';
+import { Clock, User, Activity, Filter, RefreshCw, LogOut } from 'lucide-react';
 
 /**
- * Dashboard de Logs en Tiempo Real (Aplicación B)
+ * Dashboard de Logs en Tiempo Real
  * 
- * Muestra los logs de auditoría del sistema en tiempo real
- * Solo accesible para usuarios con rol de administrador
+ * Modo 1: Normal (APP A) - Autenticación por contexto
+ *   - Acceso desde sidebar: /admin/logs
+ *   - Requiere AppLayout y autenticación JWT
+ *   - Puerto: 5173
+ * 
+ * Modo 2: SSO (APP B) - Token en URL
+ *   - Acceso desde APP A: http://localhost:5174/logs?token=...
+ *   - Token viene en parámetro de URL
+ *   - Se valida en backend sin requerir header Authorization
+ *   - No usa AppLayout, es standalone
+ *   - Puerto: 5174 (instancia separada)
  */
 
 const ACTION_COLORS = {
@@ -22,7 +32,7 @@ const ACTION_COLORS = {
     'DEFAULT': 'bg-slate-100 text-slate-800 border-slate-200'
 };
 
-function LogsDashboardContent() {
+function LogsDashboardContent({ ssoToken = null, cleanURL = false }) {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -30,6 +40,13 @@ function LogsDashboardContent() {
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [lastUpdate, setLastUpdate] = useState(new Date());
     const pollingIntervalRef = useRef(null);
+    const urlCleaned = useRef(false); // Prevenir múltiples limpiezas de URL
+
+    // Función para cerrar sesión
+    const handleLogout = () => {
+        clearTokens();
+        window.location.href = '/login';
+    };
 
     // Obtener logs
     const fetchLogs = async (showLoading = true) => {
@@ -37,7 +54,22 @@ function LogsDashboardContent() {
             if (showLoading) setLoading(true);
             setError(null);
 
-            const data = await apiFetch('/api/logs/recent?limit=100', { auth: true });
+            let data;
+            if (ssoToken) {
+                // Modo SSO: pasar token en POST body (más seguro)
+                // Usar apiFetch sin auth header (el token va en el body)
+                data = await apiFetch('/api/logs/sso', {
+                    method: 'POST',
+                    body: {
+                        token: ssoToken,
+                        limit: 100
+                    },
+                    auth: false // No agregar Authorization header en SSO
+                });
+            } else {
+                // Modo normal: usar token del contexto/localStorage
+                data = await apiFetch('/api/logs/recent?limit=100', { auth: true });
+            }
 
             if (data.success) {
                 setLogs(data.logs || []);
@@ -53,14 +85,20 @@ function LogsDashboardContent() {
 
     // Carga inicial
     useEffect(() => {
+        // Si es SSO, limpiar la URL inmediatamente (antes de que se vea con el token)
+        if (ssoToken && cleanURL && !urlCleaned.current && window.history && window.history.replaceState) {
+            window.history.replaceState(null, document.title, '/logs');
+            urlCleaned.current = true;
+        }
+        
         fetchLogs();
-    }, []);
+    }, [ssoToken]);
 
     // Auto-refresh cada 5 segundos
     useEffect(() => {
         if (autoRefresh) {
             pollingIntervalRef.current = setInterval(() => {
-                fetchLogs(false); // Sin mostrar loading durante el polling
+                fetchLogs(false);
             }, 5000);
         }
 
@@ -69,7 +107,7 @@ function LogsDashboardContent() {
                 clearInterval(pollingIntervalRef.current);
             }
         };
-    }, [autoRefresh]);
+    }, [autoRefresh, ssoToken]);
 
     // Filtrar logs por acción
     const filteredLogs = filterAction === 'all'
@@ -97,10 +135,15 @@ function LogsDashboardContent() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Cargando logs del sistema...</p>
+                    <p className="text-gray-600 font-medium">
+                        {ssoToken ? 'Validando sesión SSO...' : 'Cargando logs del sistema...'}
+                    </p>
+                    {ssoToken && (
+                        <p className="text-sm text-gray-500 mt-2">Iniciando sesión desde APP A</p>
+                    )}
                 </div>
             </div>
         );
@@ -108,6 +151,22 @@ function LogsDashboardContent() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+            {/* SSO Header */}
+            {ssoToken && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex justify-between items-center">
+                    <div>
+                        <p className="text-sm font-semibold text-blue-900">Modo SSO Activo</p>
+                        <p className="text-xs text-blue-700">Sesión de APP A validada correctamente</p>
+                    </div>
+                    <button
+                        onClick={() => window.location.href = '/login'}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded font-medium"
+                    >
+                        Volver a APP A
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 mb-6 border border-white/20">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -149,6 +208,13 @@ function LogsDashboardContent() {
                             <RefreshCw className="w-4 h-4" />
                             Actualizar
                         </button>
+                        <button
+                            onClick={handleLogout}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Salir
+                        </button>
                     </div>
                 </div>
 
@@ -183,6 +249,11 @@ function LogsDashboardContent() {
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                     <p className="text-red-800 font-semibold">Error: {error}</p>
+                    {ssoToken && (
+                        <p className="text-red-700 text-sm mt-2">
+                            El token no es válido o ha expirado. Por favor, <a href="/login" className="underline font-semibold">inicia sesión nuevamente</a>.
+                        </p>
+                    )}
                 </div>
             )}
 
@@ -248,6 +319,18 @@ function LogsDashboardContent() {
 }
 
 export default function LogsDashboard() {
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const ssoToken = searchParams.get('token');
+
+    // Modo SSO: no requiere AppLayout ni autenticación del contexto
+    if (ssoToken) {
+        return <LogsDashboardContent ssoToken={ssoToken} cleanURL={true} />;
+    }
+
+    // Si accede a /logs sin token en URL, intentar usar contexto de APP A
+    // (para cuando se accede desde /admin/logs con ProtectedRoute)
+    // Si no hay contexto, redirigir a login
     return (
         <AppLayout>
             <LogsDashboardContent />

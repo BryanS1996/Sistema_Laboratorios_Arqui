@@ -15,10 +15,19 @@ const logsRoutes = require("./routes/logs.routes");
 // Aplicación Express (sin levantar el servidor). Permite testear/usar en server.js
 const app = express();
 
-// CORS para el frontend (Vite por defecto corre en :5173)
+// CORS para ambas instancias del frontend (APP A: 5173, APP B: 5174)
 app.use(
     cors({
-        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+        origin: function(origin, callback) {
+            // Permitir localhost con cualquier puerto para desarrollo
+            if (!origin || origin.startsWith('http://localhost:')) {
+                callback(null, true);
+            } else if (process.env.CORS_ORIGIN && origin === process.env.CORS_ORIGIN) {
+                callback(null, true);
+            } else {
+                callback(new Error('No permitido por CORS'));
+            }
+        },
         credentials: true,
     })
 );
