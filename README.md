@@ -15,233 +15,127 @@
 
   ![PostgreSQL](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
   ![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)
-  ![Firebase](https://img.shields.io/badge/firebase-%23039BE5.svg?style=for-the-badge&logo=firebase)
+  ![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
   ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+  ![Google Cloud](https://img.shields.io/badge/GoogleCloud-%234285F4.svg?style=for-the-badge&logo=google-cloud&logoColor=white)
 
 </div>
 
 <br/>
 
-<br/>
-
-Este proyecto es un sistema integral para la gestión, reserva y administración de laboratorios de computación de la Facultad. Permite a estudiantes y profesores reservar espacios, y a los administradores gestionar la carga académica, horarios y usuarios.
+Este proyecto es un sistema integral para la gestión, reserva y administración de laboratorios de computación de la Facultad. Implementa una arquitectura moderna, híbrida y resiliente, diseñada para soportar alta concurrencia y gestión académica compleja.
 
 ## 🚀 Características Principales
 
-*   **Gestión de Reservas**: Interfaz visual para reservar laboratorios por horas.
+*   **Gestión de Reservas Inteligente**: Sistema de reservas validado con reglas de negocio complejas (prioridad profesor/estudiante, regla de los 10 minutos, conflictos de horario).
 *   **Roles de Usuario**:
-    *   **Estudiante**: Puede reservar laboratorios para práctica libre.
-    *   **Profesor**: Tiene prioridad en reservas y puede asignar reservas a sus materias.
-    *   **Administrador**: Gestión total de usuarios, laboratorios, horarios y reservas.
-*   **Gestión Académica**: Control de Semestres, Asignaturas, Paralelos y Carga Horaria.
-*   **Validación de Conflictos**: Sistema inteligente que evita solapamiento de reservas y horarios de clase.
-*   **Sistema de Mensajería Interna**: Chat en tiempo real con historial persistente (MongoDB) para la comunicación entre profesores, estudiantes y administradores. Incluye notificaciones de mensajes no leídos y ordenamiento inteligente.
-*   **Autenticación Híbrida**: Sincronización entre Firebase Auth y base de datos local PostgreSQL.
+    *   **Estudiante**: Reservas de práctica libre.
+    *   **Profesor**: Prioridad en reservas y asignación a materias.
+    *   **Administrador**: Control total del sistema.
+*   **Gestión Académica**: Control de Semestres, Materias, Paralelos y Carga Horaria.
+*   **Dashboard de Logs en Tiempo Real**: Monitorización de actividad administrativa usando **Redis Pub/Sub** y WebSockets/Polling.
+*   **Resiliencia**: Sistema capaz de operar en modo degradado (lectura de caché Redis) si la base de datos principal (Postgres) falla.
+*   **Autenticación Robusta**: **Google OAuth** con gestión de sesiones segura mediante JWT en Cookies HttpOnly.
 
 ## 🛠️ Stack Tecnológico
 
-*   **Frontend**: React + Vite (Javascript), TailwindCSS, ShadcnUI, Lucide Icons.
+*   **Frontend**: React + Vite + TailwindCSS (ShadcnUI, Lucide Icons).
 *   **Backend**: Node.js + Express.
-*   **Caché**: Redis 7 (In-memory storage para Dashboard y Reservas).
-*   **Base de Datos Relacional**: PostgreSQL (Usuarios, Académico, Laboratorios, Horarios).
-*   **Base de Datos No Relacional**: MongoDB (Reservas - Histórico y Mensajería).
-*   **Autenticación**: Firebase Auth + JWT.
-*   **Infraestructura**: Docker & Docker Compose.
+*   **Bases de Datos**:
+    *   **PostgreSQL**: Datos relacionales (Usuarios, Roles, Académico, Auditoría Permanente).
+    *   **MongoDB**: Datos operativos volátiles (Reservas, Historial de Chat).
+    *   **Redis**: Capa de Caché, Colas de Logs Recientes y Pub/Sub para tiempo real.
+*   **Autenticación**: Google OAuth 2.0 + JWT (Access Token + Refresh Token).
+*   **Infraestructura**: Docker Compose (Contenedores para App, DBs y herramientas de gestión).
 
 ---
 
-El sistema utiliza un diseño basado en patrones **DAO (Data Access Object)** y una **Factoría Híbrida** para gestionar la persistencia políglota, optimizada con una capa de caché de alto rendimiento.
+## 🏗️ Arquitectura del Sistema
+
+El sistema utiliza un diseño basado en patrones **DAO (Data Access Object)** y persistencia políglota, optimizada con una capa de caché de alto rendimiento.
 
 ```mermaid
 graph TD
-    User[Usuario / Navegador] -->|HTTPS| Frontend[Vite Frontend App]
+    User[Usuario / Admin] -->|HTTPS| Frontend[Vite Frontend App]
     
     subgraph "Frontend Layer"
-        Frontend --> AuthCtx[AuthContext]
+        Frontend --> AuthCtx[Auth Context (Google OAuth)]
         Frontend --> Query[TanStack Query]
-        Frontend --> Router[React Router]
-        Frontend --> Polling[Polling Service / Hook]
+        Frontend --> Polling[Real-time Dashboard]
     end
     
-    subgraph "API Gateway / Backend"
-        Router -->|REST API Request| Express[Express Server]
-        Express --> AuthMw["Auth Middleware (JWT)"]
-        Express --> CacheMw[Cache Middleware]
-        CacheMw --> Controllers[Controllers Layer]
-    end
-    
-    subgraph "Data Persistence Layer"
-        Controllers --> Factory[Persistence Factory]
-        Factory -->|Decision Logic| HybridDao{Hybrid Factory}
+    subgraph "Backend API Gateway"
+        Polling -->|REST Request| API[Express Server]
+        Query -->|REST Request| API
         
-        HybridDao -->|Postgres DAO| Postgres[(PostgreSQL)]
-        HybridDao -->|Mongo DAO| MongoDB[(MongoDB)]
-        CacheMw <-->|HIT/MISS| Redis[(Redis Cache)]
+        API --> AuthMw["Auth Middleware (JWT Verify)"]
+        API --> CacheMw[Cache Middleware]
+        
+        AuthMw --> Controllers[Controllers Layer]
+        CacheMw --> Controllers
+    end
+    
+    subgraph "Persistence Layer"
+        Controllers --> Factory[DAO Factory]
+        
+        Factory -->|Relational Data| Postgres[(PostgreSQL)]
+        Factory -->|Operational Data| MongoDB[(MongoDB)]
+        
+        Controllers <-->|Cache HIT/MISS| Redis[(Redis RAM)]
+        
+        Postgres -.->|Replica/Sync| Redis
     end
 ```
 
 ---
 
-## 💾 Bases de Datos
+## 🔐 Flujo de Autenticación (Google OAuth)
 
-El sistema utiliza un enfoque híbrido para aprovechar las fortalezas de SQL y NoSQL.
-
-### 1. PostgreSQL (Core & Académico)
-Maneja la integridad referencial fuerte requerida para la estructura académica y usuarios.
-
-#### Diagrama E-R (Entidad-Relación)
-
-```mermaid
-erDiagram
-    USERS ||--o{ PROFESSOR_ASSIGNMENTS : "tiene"
-    USERS ||--o{ STUDENT_ENROLLMENTS : "tiene"
-    USERS {
-        int id PK
-        string email
-        string password_hash
-        string role "admin, professor, student"
-        string firebase_uid
-    }
-
-    SEMESTERS ||--|{ SUBJECTS : "contiene"
-    SEMESTERS {
-        int id PK
-        string name
-        boolean active
-    }
-
-    SUBJECTS ||--|{ PARALLELS : "tiene"
-    SUBJECTS ||--o{ PROFESSOR_ASSIGNMENTS : "asignada a"
-    SUBJECTS {
-        int id PK
-        string name
-        int semester_id FK
-    }
-
-    PARALLELS ||--o{ STUDENT_ENROLLMENTS : "inscritos"
-    PARALLELS ||--o{ SCHEDULES : "tiene horario"
-    PARALLELS {
-        int id PK
-        string name "A, B, C"
-        int subject_id FK
-    }
-
-    LABORATORIES ||--o{ SCHEDULES : "ocupado por"
-    LABORATORIES {
-        int id PK
-        string nombre
-        int capacidad
-        string ubicacion
-    }
-
-    SCHEDULES {
-        int id PK
-        string dia
-        time hora_inicio
-        time hora_fin
-        int parallel_id FK
-        int lab_id FK
-    }
-```
-
-### 2. MongoDB (Reservas)
-Maneja las transacciones de reservas, permitiendo flexibilidad y rapidez en consultas de rangos de fechas.
-
-**Colección: `reservas`**
-
-| Campo | Tipo | Descripción |
-| :--- | :--- | :--- |
-| `_id` | ObjectId | Identificador único |
-| `userId` | String | ID del usuario (Postgres ID) |
-| `nombre` | String | Nombre del usuario (Caché visual) |
-| `laboratorio` | String | Nombre del laboratorio |
-| `fecha` | String | Formato YYYY-MM-DD |
-| `horaInicio` | String | Formato HH:mm |
-| `horaFin` | String | Formato HH:mm |
-
-### 3. Redis (Caché de Rendimiento)
-Utilizado para acelerar el Dashboard Administrativo y las consultas frecuentes de disponibilidad mediante:
-- **Middleware de Caché**: Intercepción de rutas GET.
-- **Polling Optimization**: Soporta actualizaciones cada 2s con mínimo impacto en DB.
-- **TTLs Dinámicos**: Entre 5 y 30 segundos según la volatilidad del dato.
-
----
-
-## 🔐 Flujo de Autenticación Híbrido
-
-Implementamos una estrategia de "Lazy Migration" para soportar usuarios legados de Firebase y nuevos usuarios nativos.
+El sistema ha eliminado Firebase en favor de una autenticación nativa con Google OAuth para mayor control y privacidad.
 
 ```mermaid
 sequenceDiagram
-    participant Usuario
-    participant Backend
-    participant BaseDatos as PostgreSQL
-    participant Firebase
+    participant U as Usuario
+    participant F as Frontend
+    participant G as Google Auth
+    participant B as Backend
+    participant D as PostgreSQL
 
-    Usuario->>Backend: Iniciar Sesión (email, clave)
-    Backend->>BaseDatos: Buscar Usuario por Email
+    U->>F: Clic "Iniciar con Google"
+    F->>G: Solicita Acceso (Scope: profile, email)
+    G-->>F: Retorna ID Token
     
-    alt Usuario tiene Clave Local (Hash)
-        Backend->>Backend: Verificar Hash (bcrypt)
-        alt Clave Correcta
-            Backend->>Usuario: Retorna Token JWT (Acceso)
-        else Clave Incorrecta
-            Backend->>Usuario: Error 401 (No autorizado)
-        end
-    else Usuario NO tiene Clave Local (Migración)
-        Backend->>Firebase: Verificar Credenciales (REST API)
-        alt Firebase OK
-            Backend->>BaseDatos: Guardar nueva clave (Hash)
-            Backend->>Usuario: Retorna Token JWT
-        else Error en Firebase
-            Backend->>Usuario: Error 401 (Credenciales inválidas)
-        end
-    end
+    F->>B: POST /auth/google { token }
+    B->>G: Verifica validez del Token
+    G-->>B: Token Válido + Datos Usuario
+    
+    B->>D: Buscar o Crear Usuario (Upsert)
+    D-->>B: User ID & Rol
+    
+    B->>B: Generar JWT (Access & Refresh)
+    B-->>F: Set-Cookie: jwt=...; HttpOnly
+    
+    F->>B: GET /auth/me (con Cookie)
+    B-->>F: Retorna Datos de Usuario + Rol
 ```
 
 ---
 
-## 🔄 Flujos de Trabajo Principales
+## 💾 Modelo de Datos Híbrido
 
-### 1. Reserva de Laboratorio
+### 1. PostgreSQL (Estructura y Seguridad)
+*   **Tablas**: `users`, `audit_logs`, `semesters`, `subjects`, `parallels`, `schedules`.
+*   **Función**: Garantiza la integridad referencial de la carga académica y la seguridad de los usuarios.
 
-1.  **Selección**: El usuario selecciona un laboratorio desde el **Catálogo**.
-2.  **Formulario**: Ingresa fecha, hora y motivo.
-    *   *Profesores*: Pueden seleccionar una de sus materias asignadas.
-    *   *Estudiantes*: Reserva personal.
-3.  **Validación**:
-    *   ¿El laboratorio está abierto?
-    *   ¿Ya existe una reserva en ese horario?
-    *   ¿Hay conflicto con una clase regular (Schedule)?
-    *   **Prioridad 10min**: Si un profesor intenta reservar sobre un estudiante y la reserva del estudiante tiene < 10 mins, el profesor puede reclamar el turno.
-4.  **Confirmación**: Se guarda en MongoDB y se notifica al usuario.
+### 2. MongoDB (Flexibilidad Operativa)
+*   **Colecciones**: `reservas`, `laboratorios`, `chat_messages`.
+*   **Función**: Permite consultas complejas de rangos de fechas para reservas y almacenamiento de mensajes de chat.
 
-4.  **Confirmación**: Se guarda en MongoDB y se notifica al usuario.
-
-### 2. Comunicación Institucional (Chat)
-
-1.  **Listado de Contactos**: Se muestran usuarios relevantes según el rol (Profesores ven estudiantes, etc.).
-2.  **Sondeo Inteligente**: El sistema actualiza automáticamente los mensajes no leídos y reordena la lista de contactos para dar prioridad a las conversaciones activas.
-3.  **Persistencia**: Todo el historial de chat se almacena en MongoDB (`messages` collection), garantizando que no se pierdan datos entre sesiones.
-4.  **Sincronización**: Control de estado de lectura para notificar al remitente cuando su mensaje ha sido visto.
-
-### 3. Gestión Académica (Admin)
-
-1.  **Carga de Datos**: El administrador crea Semestres, Materias y Paralelos.
-2.  **Asignación Docente**: Asigna profesores a materias específicas.
-3.  **Matriculación**: Asigna estudiantes a paralelos (Semestre).
-4.  **Generación de Horarios**: Define horarios fijos (Clases) en la tabla `schedules`.
-5.  **Generación Masiva**: El sistema puede generar automáticamente las reservas en MongoDB para todo el semestre basándose en los `schedules`.
-
----
-
-## 👥 Roles del Sistema
-
-| Rol | Permisos |
-| :--- | :--- |
-| **Admin** | Acceso total. Crear/Editar/Eliminar laboratorios, usuarios, materias, horarios. Puede borrar cualquier reserva. |
-| **Profesor** | Reservar con prioridad. Ver sus materias. Reclamar turnos de estudiantes recientes. |
-| **Estudiante** | Reservar turnos libres. Ver sus materias inscritas. Solo puede borrar sus propias reservas. |
+### 3. Redis (Velocidad y Tiempo Real)
+*   **Estructuras**:
+    *   `recent_audit_logs` (List): Últimos 100 eventos para el dashboard.
+    *   `reservas:date` (Key-Value): Caché de disponibilidad.
+*   **Función**: Provee respuestas en <10ms para dashboards y reduce carga en bases de datos.
 
 ---
 
@@ -249,7 +143,6 @@ sequenceDiagram
 
 ### Requisitos Previos
 *   Docker & Docker Compose
-*   Node.js v18+ (para desarrollo local sin Docker)
 
 ### Pasos para Ejecutar
 
@@ -259,66 +152,35 @@ sequenceDiagram
     cd Sistema_Laboratorios_Arqui
     ```
 
-2.  **Configurar Variables de Entorno**
-    *   Copiar `backend/.env.example` a `backend/.env` y configurar credenciales de DB y Firebase.
-    *   Copiar `frontend/.env.example` a `frontend/.env`.
+2.  **Configurar Entorno**
+    *   Asegúrate de tener los archivos `.env` en `backend/` y `frontend/` (ver `.env.example`).
+    *   **Importante**: Necesitas credenciales de Google OAuth (Client ID).
 
 3.  **Iniciar con Docker Compose**
     ```bash
-    docker-compose up --build
+    docker-compose up --build -d
     ```
-    Esto levantará:
-    *   Backend en puerto `3000`
-    *   Frontend en puerto `5173`
-    *   Postgres en puerto `5432`
-    *   MongoDB en puerto `27017`
-    *   Redis en puerto `6379`
-    *   Redis Commander en puerto `8082` (Web UI para Caché)
-    *   Mongo Express en puerto `8081` (Interfaz Mongo)
-    *   pgAdmin en puerto `5050` (Interfaz Postgres)
+    
+    Servicios disponibles:
+    *   **Frontend**: http://localhost:5173
+    *   **Backend**: http://localhost:3000
+    *   **Mongo Express**: http://localhost:8081
+    *   **Redis Commander**: http://localhost:8082
+    *   **pgAdmin**: http://localhost:5050
 
-### 🔄 Restauración Automática de Base de Datos
+### 🧪 Ejecución de Tests (Resiliencia)
 
-El sistema está configurado para restaurar automáticamente el archivo `backend/sql/academico.sql` al iniciar el contenedor de PostgreSQL **por primera vez**.
+Este proyecto incluye una suite de pruebas de estrés con **k6** para verificar la robustez del sistema y el funcionamiento del caché Redis.
 
-Si deseas reiniciar la base de datos con estos datos:
-1.  Detén los contenedores y borra los volúmenes:
-    ```bash
-    docker-compose down -v
-    ```
-2.  Inicia nuevamente:
-    ```bash
-    docker-compose up --build
-    ```
-Esto ejecutará el script `academico.sql` después de la inicialización básica.
+Para ejecutar los tests de estrés y ver el dashboard de métricas:
 
-### Scripts de Utilidad (Backend)
-
-Ubicados en `backend/scripts/`:
-*   `create_admin_fixed.js`: Crea/Restablece un usuario administrador.
-*   `check_users.js`: Lista usuarios en la base de datos local.
-*   `seed_reservations.js`: Genera datos de prueba para reservas.
-
----
-
-## 📁 Estructura del Proyecto
-
+```powershell
+# Ejecutar test de logs y resiliencia
+k6 run stress_test_logs_fullstack.js
 ```
-/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/   # Lógica de entrada/salida
-│   │   ├── services/      # Lógica de negocio
-│   │   ├── daos/          # Acceso a datos (Postgres/Mongo)
-│   │   ├── models/        # Modelos Mongoose
-│   │   └── routes/        # Definición de endpoints
-│   ├── sql/               # Scripts de migración SQL
-│   └── scripts/           # Scripts de mantenimiento
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # Componentes Reutilizables
-│   │   ├── pages/         # Vistas principales
-│   │   ├── context/       # Estado global (Auth)
-│   │   └── lib/           # Utilidades y API
-└── docker-compose.yml
-```
+
+Para probar la **resiliencia** (caída de base de datos):
+1.  Inicia el test k6.
+2.  En otra terminal: `docker stop gestor_lab_postgres`.
+3.  Verifica en http://localhost:5173/admin/logs que el sistema sigue funcionando (gracias a Redis).
+4.  Restaura la base de datos: `docker start gestor_lab_postgres`.

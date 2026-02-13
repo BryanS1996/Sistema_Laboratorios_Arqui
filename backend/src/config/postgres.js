@@ -10,6 +10,12 @@ function getPool() {
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DATABASE,
     });
+
+    // Manejar errores de conexión idle para que no tuesten el backend
+    pool.on('error', (err) => {
+      console.error('🔴 Unexpected error on idle client', err);
+      // No salir del proceso
+    });
   }
   return pool;
 }

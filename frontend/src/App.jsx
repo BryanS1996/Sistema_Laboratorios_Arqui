@@ -10,6 +10,7 @@ import MyReservations from './pages/reservas/MyReservations';
 import AcademicManagement from './pages/AcademicManagement';
 import UserManagement from './pages/UserManagement';
 import AdminDashboard from './pages/AdminDashboard';
+import LogsDashboard from './pages/LogsDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicLayout from './components/PublicLayout';
 import ChatPage from './pages/chat/ChatPage';
@@ -84,6 +85,15 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/logs"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <LogsDashboard />
             </ProtectedRoute>
           }
         />

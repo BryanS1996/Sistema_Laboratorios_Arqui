@@ -45,8 +45,9 @@ function initializeB2() {
     }
 }
 
-// Inicializar al cargar el módulo
-initializeB2();
+// NOTA: Backblaze B2 deshabilitado - no se usa en este proyecto
+// Si se necesita en el futuro, descomentar la siguiente línea:
+// initializeB2();
 
 /**
  * Verificar si B2 está disponible

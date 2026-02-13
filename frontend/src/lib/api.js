@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Usar ruta relativa si no hay VITE_API_URL configurado (permite que Vite proxy funcione)
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 
 // Gestión de tokens

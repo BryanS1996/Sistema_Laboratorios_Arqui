@@ -32,7 +32,7 @@ export default function EditReservationModal({ reservation, onClose, onUpdate })
         try {
             const updated = await apiFetch(`/reservas/${reservation._id}`, {
                 method: 'PUT',
-                body: JSON.stringify(form)
+                body: form
             })
             onUpdate(updated)
             onClose()

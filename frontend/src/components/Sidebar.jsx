@@ -10,6 +10,7 @@ import {
   Settings,
   MessageCircle,
   BarChart3,
+  FileText, // Icono para Logs
   X // Close icon
 } from 'lucide-react'
 
@@ -75,6 +76,10 @@ export default function Sidebar({ isOpen, onClose }) {
               <NavLink to="/admin/users" className={getLinkClass} onClick={onClose}>
                 <Users size={18} />
                 Gestión de Usuarios
+              </NavLink>
+              <NavLink to="/admin/logs" className={getLinkClass} onClick={onClose}>
+                <FileText size={18} />
+                Logs del Sistema
               </NavLink>
             </div>
           )}

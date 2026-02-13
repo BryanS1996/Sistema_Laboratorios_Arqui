@@ -1,4 +1,5 @@
 const reservasService = require("../services/reservas.service");
+const AuditService = require("../services/audit.service");
 
 /**
  * Controlador de reservas.
@@ -10,6 +11,17 @@ const reservasService = require("../services/reservas.service");
 async function crear(req, res) {
   try {
     const doc = await reservasService.crear(req.user, req.body);
+
+    // Auditar creación de reserva
+    await AuditService.log(
+      req.user.id,
+      AuditService.ACTIONS.CREATE_RESERVA,
+      'reserva',
+      doc._id || doc.id,
+      { laboratorio: req.body.laboratorio, fecha: req.body.fecha, horaInicio: req.body.horaInicio },
+      req
+    );
+
     return res.status(201).json(doc);
   } catch (e) {
     return res.status(400).json({ message: e.message });
@@ -53,6 +65,17 @@ async function actualizar(req, res) {
   try {
     // Pasamos el usuario completo para que el servicio decida si permite la edición (Admin vs Owner)
     const doc = await reservasService.actualizar(req.user, req.params.id, req.body);
+
+    // Auditar actualización de reserva
+    await AuditService.log(
+      req.user.id,
+      AuditService.ACTIONS.UPDATE_RESERVA,
+      'reserva',
+      req.params.id,
+      { updates: Object.keys(req.body) },
+      req
+    );
+
     return res.json(doc);
   } catch (e) {
     const status = e.message.includes("no encontrada") || e.message.includes("permiso") ? 404 : 400;
@@ -71,6 +94,19 @@ async function reporteMine(req, res) {
 
 async function eliminar(req, res) {
   const ok = await reservasService.eliminar(req.user, req.params.id);
+
+  // Auditar eliminación de reserva
+  if (ok) {
+    await AuditService.log(
+      req.user.id,
+      AuditService.ACTIONS.DELETE_RESERVA,
+      'reserva',
+      req.params.id,
+      {},
+      req
+    );
+  }
+
   return res.json({ deleted: ok });
 }
 
