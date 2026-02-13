@@ -56,34 +56,34 @@ El sistema utiliza un diseño basado en patrones **DAO (Data Access Object)** y 
 
 ```mermaid
 graph TD
-    User[Usuario / Admin] -->|HTTPS| Frontend[Vite Frontend App]
+    User["Usuario / Admin"] -->|HTTPS| Frontend["Vite Frontend App"]
     
     subgraph "Frontend Layer"
-        Frontend --> AuthCtx[Auth Context (Google OAuth)]
-        Frontend --> Query[TanStack Query]
-        Frontend --> Polling[Real-time Dashboard]
+        Frontend --> AuthCtx["Auth Context (Google OAuth)"]
+        Frontend --> Query["TanStack Query"]
+        Frontend --> Polling["Real-time Dashboard"]
     end
     
     subgraph "Backend API Gateway"
-        Polling -->|REST Request| API[Express Server]
+        Polling -->|REST Request| API["Express Server"]
         Query -->|REST Request| API
         
         API --> AuthMw["Auth Middleware (JWT Verify)"]
-        API --> CacheMw[Cache Middleware]
+        API --> CacheMw["Cache Middleware"]
         
-        AuthMw --> Controllers[Controllers Layer]
+        AuthMw --> Controllers["Controllers Layer"]
         CacheMw --> Controllers
     end
     
     subgraph "Persistence Layer"
-        Controllers --> Factory[DAO Factory]
+        Controllers --> Factory["DAO Factory"]
         
-        Factory -->|Relational Data| Postgres[(PostgreSQL)]
-        Factory -->|Operational Data| MongoDB[(MongoDB)]
+        Factory -->|Relational Data| Postgres[("PostgreSQL")]
+        Factory -->|Operational Data| MongoDB[("MongoDB")]
         
-        Controllers <-->|Cache HIT/MISS| Redis[(Redis RAM)]
+        Controllers <-->|"Cache HIT/MISS"| Redis[("Redis RAM")]
         
-        Postgres -.->|Replica/Sync| Redis
+        Postgres -.->|"Replica/Sync"| Redis
     end
 ```
 
@@ -113,7 +113,7 @@ sequenceDiagram
     D-->>B: User ID & Rol
     
     B->>B: Generar JWT (Access & Refresh)
-    B-->>F: Set-Cookie: jwt=...; HttpOnly
+    B-->>F: "Set-Cookie: jwt=...; HttpOnly"
     
     F->>B: GET /auth/me (con Cookie)
     B-->>F: Retorna Datos de Usuario + Rol
