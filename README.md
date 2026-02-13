@@ -55,6 +55,7 @@ Este proyecto es un sistema integral para la gestión, reserva y administración
 El sistema utiliza un diseño basado en patrones **DAO (Data Access Object)** y persistencia políglota, optimizada con una capa de caché de alto rendimiento.
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'background': '#FFFFFF', 'mainBkg': '#FFFFFF'}}}%%
 graph TD
     User["Usuario / Admin"] -->|HTTPS| Frontend["Vite Frontend App"]
     
@@ -89,11 +90,98 @@ graph TD
 
 ---
 
+## 💾 Bases de Datos
+
+El sistema utiliza un enfoque híbrido para aprovechar las fortalezas de SQL y NoSQL.
+
+### 1. PostgreSQL (Core & Académico)
+Maneja la integridad referencial fuerte requerida para la estructura académica y usuarios.
+
+#### Diagrama E-R (Entidad-Relación)
+
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'background': '#FFFFFF', 'mainBkg': '#FFFFFF'}}}%%
+erDiagram
+    USERS ||--o{ PROFESSOR_ASSIGNMENTS : "tiene"
+    USERS ||--o{ STUDENT_ENROLLMENTS : "tiene"
+    USERS {
+        int id PK
+        string email
+        string password_hash
+        string role "admin, professor, student"
+        string google_id
+    }
+
+    SEMESTERS ||--|{ SUBJECTS : "contiene"
+    SEMESTERS {
+        int id PK
+        string name
+        boolean active
+    }
+
+    SUBJECTS ||--|{ PARALLELS : "tiene"
+    SUBJECTS ||--o{ PROFESSOR_ASSIGNMENTS : "asignada a"
+    SUBJECTS {
+        int id PK
+        string name
+        int semester_id FK
+    }
+
+    PARALLELS ||--o{ STUDENT_ENROLLMENTS : "inscritos"
+    PARALLELS ||--o{ SCHEDULES : "tiene horario"
+    PARALLELS {
+        int id PK
+        string name "A, B, C"
+        int subject_id FK
+    }
+
+    LABORATORIES ||--o{ SCHEDULES : "ocupado por"
+    LABORATORIES {
+        int id PK
+        string nombre
+        int capacidad
+        string ubicacion
+    }
+
+    SCHEDULES {
+        int id PK
+        string dia
+        time hora_inicio
+        time hora_fin
+        int parallel_id FK
+        int lab_id FK
+    }
+```
+
+### 2. MongoDB (Reservas)
+Maneja las transacciones de reservas, permitiendo flexibilidad y rapidez en consultas de rangos de fechas.
+
+**Colección: `reservas`**
+
+| Campo | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `_id` | ObjectId | Identificador único |
+| `userId` | String | ID del usuario (Postgres ID) |
+| `nombre` | String | Nombre del usuario (Caché visual) |
+| `laboratorio` | String | Nombre del laboratorio |
+| `fecha` | String | Formato YYYY-MM-DD |
+| `horaInicio` | String | Formato HH:mm |
+| `horaFin` | String | Formato HH:mm |
+
+### 3. Redis (Caché de Rendimiento)
+Utilizado para acelerar el Dashboard Administrativo y las consultas frecuentes de disponibilidad mediante:
+- **Middleware de Caché**: Intercepción de rutas GET.
+- **Polling Optimization**: Soporta actualizaciones cada 2s con mínimo impacto en DB.
+- **TTLs Dinámicos**: Entre 5 y 30 segundos según la volatilidad del dato.
+
+---
+
 ## 🔐 Flujo de Autenticación (Google OAuth)
 
 El sistema ha eliminado Firebase en favor de una autenticación nativa con Google OAuth para mayor control y privacidad.
 
 ```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'background': '#FFFFFF', 'mainBkg': '#FFFFFF'}}}%%
 sequenceDiagram
     participant U as Usuario
     participant F as Frontend
