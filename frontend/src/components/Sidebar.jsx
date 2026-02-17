@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getToken } from '../lib/api'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -22,6 +23,21 @@ export default function Sidebar({ isOpen, onClose }) {
   const inactiveClass = "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
 
   const getLinkClass = ({ isActive }) => `${linkBase} ${isActive ? activeClass : inactiveClass}`
+
+  // Manejar redirección a APP B (Logs)
+  const handleLogsRedirect = () => {
+    const token = getToken()
+    if (!token) {
+      console.warn('No token found, redirecting to login')
+      window.location.href = '/login'
+      return
+    }
+    // Redirigir a APP B en nueva pestaña
+    // El token estará en la URL para validación inicial
+    // APP B limpiarán la URL después de usarlo
+    const logsURL = `http://localhost:5174/logs?token=${encodeURIComponent(token)}`
+    window.open(logsURL, '_blank')
+  }
 
   return (
     <>
@@ -77,10 +93,17 @@ export default function Sidebar({ isOpen, onClose }) {
                 <Users size={18} />
                 Gestión de Usuarios
               </NavLink>
-              <NavLink to="/admin/logs" className={getLinkClass} onClick={onClose}>
+              {/* SSO: Logs del Sistema redirige a APP B */}
+              <button
+                onClick={() => {
+                  onClose()
+                  handleLogsRedirect()
+                }}
+                className={`${linkBase} ${inactiveClass} w-full text-left`}
+              >
                 <FileText size={18} />
                 Logs del Sistema
-              </NavLink>
+              </button>
             </div>
           )}
         </nav>

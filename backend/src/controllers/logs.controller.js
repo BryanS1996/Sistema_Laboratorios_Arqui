@@ -100,7 +100,62 @@ async function getLogStats(req, res) {
     }
 }
 
+/**
+ * Obtener logs para SSO desde Body (APP B)
+ * Valida el token desde Body y devuelve los logs
+ * Método POST más seguro que GET con token en URL
+ */
+async function getLogsViaSSOURL(req, res) {
+    try {
+        // limit puede venir de query (GET) o body (POST)
+        const limit = parseInt(req.query.limit || req.body?.limit) || 100;
+
+        // Validar que el usuario sea admin (el middleware ya validó el token)
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({
+                error: 'No tienes permisos para acceder a los logs',
+                requiredRole: 'admin',
+                yourRole: req.user.role
+            });
+        }
+
+        // Obtener logs igual que getRecentLogs
+        let logs = await redisService.lRange('recent_audit_logs', 0, limit - 1);
+
+        if (!logs || logs.length === 0) {
+            console.log('📊 Redis vacío, obteniendo logs desde Postgres...');
+            logs = await auditService.getRecent(limit);
+        } else {
+            console.log(`📊 Logs obtenidos desde Redis para SSO: ${logs.length} registros`);
+        }
+
+        const sortedLogs = logs.sort((a, b) => {
+            const dateA = new Date(a.createdAt || a.created_at);
+            const dateB = new Date(b.createdAt || b.created_at);
+            return dateB - dateA;
+        });
+
+        res.json({
+            success: true,
+            count: sortedLogs.length,
+            logs: sortedLogs,
+            user: {
+                id: req.user.id,
+                email: req.user.email,
+                role: req.user.role
+            }
+        });
+    } catch (error) {
+        console.error('SSO: Error obteniendo logs:', error);
+        res.status(500).json({
+            error: 'Error al obtener los logs del sistema',
+            details: error.message
+        });
+    }
+}
+
 module.exports = {
     getRecentLogs,
-    getLogStats
+    getLogStats,
+    getLogsViaSSOURL
 };

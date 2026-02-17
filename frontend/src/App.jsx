@@ -98,6 +98,12 @@ export default function App() {
           }
         />
 
+        {/* SSO Route: Logs sin protección (valida token en URL) */}
+        <Route
+          path="/logs"
+          element={<LogsDashboard />}
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

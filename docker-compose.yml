@@ -110,7 +110,7 @@ services:
       # Montar serviceAccountKey.json
       - ./backend/serviceAccountKey.json:/app/serviceAccountKey.json:ro
 
-  # Frontend
+  # Frontend - APP A (Admin Principal)
   frontend:
     build:
       context: ./frontend
@@ -121,7 +121,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      # API URL apunta al servicio backend de Docker
+      # API URL apunta a localhost desde el navegador del host
       - VITE_API_URL=http://localhost:3000
     networks:
       - gestor_lab_network
@@ -130,6 +130,28 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
+
+  # Frontend - APP B (Logs SSO en puerto 5174)
+  frontend-logs:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gestor_lab_frontend_logs
+    depends_on:
+      - backend
+    ports:
+      - "5174:5174"
+    environment:
+      # API URL apunta a localhost desde el navegador del host
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - gestor_lab_network
+    volumes:
+      # Montar código para hot-reload
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+    command: npm run dev -- --host 0.0.0.0 --port 5174
 
   # Redis - In-memory cache for high-performance data access
   redis:

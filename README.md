@@ -34,6 +34,7 @@ Este proyecto es un sistema integral para la gestión, reserva y administración
     *   **Administrador**: Control total del sistema.
 *   **Gestión Académica**: Control de Semestres, Materias, Paralelos y Carga Horaria.
 *   **Dashboard de Logs en Tiempo Real**: Monitorización de actividad administrativa usando **Redis Pub/Sub** y WebSockets/Polling.
+*   **Single Sign-On (SSO)**: Acceso directo a dashboards especializados desde la aplicación principal sin re-autenticación.
 *   **Resiliencia**: Sistema capaz de operar en modo degradado (lectura de caché Redis) si la base de datos principal (Postgres) falla.
 *   **Autenticación Robusta**: **Google OAuth** con gestión de sesiones segura mediante JWT en Cookies HttpOnly.
 
@@ -209,7 +210,100 @@ sequenceDiagram
 
 ---
 
-## 💾 Modelo de Datos Híbrido
+## � Single Sign-On (SSO) - Acceso Unificado
+
+El sistema implementa un mecanismo de **SSO tipo redirección** que permite acceder a aplicaciones especializadas (como el Dashboard de Logs) directamente desde la aplicación principal sin necesidad de re-autenticarse.
+
+### Arquitectura de SSO
+
+El sistema se compone de **dos instancias frontend** ejecutándose en puertos diferentes:
+
+*   **APP A (5173)**: Aplicación principal - Panel de administración completo
+*   **APP B (5174)**: Dashboard de Logs - Interfaz especializada en auditoría y monitoreo
+
+### Flujo de SSO
+
+```mermaid
+sequenceDiagram
+    participant User as Usuario
+    participant AppA as APP A (5173)
+    participant AppB as APP B (5174)
+    participant Backend as Backend (3000)
+    
+    User->>AppA: Inicia sesión en APP A
+    AppA->>Backend: POST /auth/login
+    Backend-->>AppA: {"accessToken": "JWT", "user": {...}}
+    AppA->>AppA: Guarda en localStorage('accessToken')
+    
+    User->>AppA: Clic "Logs del Sistema"
+    AppA->>AppA: Lee token de localStorage
+    AppA->>AppB: Abre en nueva pestaña<br/>http://localhost:5174/logs?token=JWT
+    
+    AppB->>Backend: POST /api/logs/sso<br/>body: {token: JWT, limit: 100}
+    Backend->>Backend: Valida JWT con JWT_SECRET
+    Backend-->>AppB: Logs del sistema (sin AppLayout)
+    AppB->>AppB: Guarda token en localStorage
+    AppB->>AppB: Limpia URL (replaceState)
+    
+    User->>AppB: Interactúa con dashboard
+    AppB->>Backend: POST /api/logs/sso<br/>Auth via body token
+    
+    User->>AppB: Clic "Salir"
+    AppB->>AppB: clearTokens() + redirect /login
+```
+
+### Almacenamiento de Token
+
+El JWT se almacena en **localStorage** con la clave `'accessToken'`:
+
+```javascript
+// APP A - Después del login
+localStorage.getItem('accessToken')  // Muestra el token completo
+
+// APP B - Después de recibir token vía URL
+setToken(ssoToken)  // Guarda en localStorage('accessToken')
+```
+
+### Seguridad en SSO
+
+*   **Token en URL**: Solo se usa temporalmente para la redirección
+*   **Token en Body**: Se valida en Backend mediante `POST /api/logs/sso` (más seguro que header)
+*   **CORS**: Configurado para permitir `localhost:5173` y `localhost:5174`
+*   **URL Cleanup**: El token se elimina de la URL una vez guardado en localStorage
+*   **JWT Secret Compartido**: Ambas instancias usan el mismo `JWT_SECRET` para validación
+
+### Endpoints SSO
+
+#### `POST /api/logs/sso` (Principal)
+Valida token desde el body JSON (más seguro):
+```javascript
+POST /api/logs/sso
+Content-Type: application/json
+
+{
+  "token": "eyJhbGc...",
+  "limit": 100
+}
+```
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "logs": [...],
+  "count": 100
+}
+```
+
+#### `GET /api/logs/sso` (Legacy)
+Valida token desde query parameters (requiere `?token=...`)
+```
+GET /api/logs/sso?token=eyJhbGc...&limit=100
+```
+
+---
+
+## �💾 Modelo de Datos Híbrido
 
 ### 1. PostgreSQL (Estructura y Seguridad)
 *   **Tablas**: `users`, `audit_logs`, `semesters`, `subjects`, `parallels`, `schedules`.
@@ -250,7 +344,8 @@ sequenceDiagram
     ```
     
     Servicios disponibles:
-    *   **Frontend**: http://localhost:5173
+    *   **APP A (Frontend Principal)**: http://localhost:5173
+    *   **APP B (Dashboard Logs - SSO)**: http://localhost:5174
     *   **Backend**: http://localhost:3000
     *   **Mongo Express**: http://localhost:8081
     *   **Redis Commander**: http://localhost:8082
@@ -272,3 +367,23 @@ Para probar la **resiliencia** (caída de base de datos):
 2.  En otra terminal: `docker stop gestor_lab_postgres`.
 3.  Verifica en http://localhost:5173/admin/logs que el sistema sigue funcionando (gracias a Redis).
 4.  Restaura la base de datos: `docker start gestor_lab_postgres`.
+
+### 🔑 Verificar Autenticación (Token JWT)
+
+Una vez que hayas iniciado sesión en APP A (http://localhost:5173), puedes ver el token en la consola del navegador:
+
+```javascript
+// En la consola del navegador (F12 -> Console)
+localStorage.getItem('accessToken')
+
+// Debería mostrar algo como:
+// "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJlbWFpb..."
+```
+
+### 🚀 Usar SSO para Acceder a APP B
+
+1.  Inicia sesión en **APP A** (http://localhost:5173)
+2.  Haz clic en **"Logs del Sistema"** en el sidebar
+3.  Se abrirá **APP B** (http://localhost:5174) en una nueva pestaña
+4.  El token se validará automáticamente sin necesidad de re-autenticarse
+5.  Haz clic en **"Salir"** para cerrar sesión
