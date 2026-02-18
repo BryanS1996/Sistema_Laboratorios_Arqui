@@ -1,4 +1,23 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// API_URL - Detectar dinámicamente el hostname del navegador
+// Si estamos en localhost, usar localhost. Si en una IP remota, usar esa misma IP.
+const getAPIURL = () => {
+    const configUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    
+    // Si es localhost o 127.0.0.1, mantener eso
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return configUrl.replace(/\d+\.\d+\.\d+\.\d+/, 'localhost');
+    }
+    
+    // Si es una IP, usar esa IP con el puerto 3001
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)) {
+        return `http://${window.location.hostname}:3001`;
+    }
+    
+    // Por defecto, usar VITE_API_URL
+    return configUrl;
+};
+
+const API_URL = getAPIURL();
 
 /**
  * Validar token SSO desde App A

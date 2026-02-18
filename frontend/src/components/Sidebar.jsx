@@ -35,7 +35,7 @@ export default function Sidebar({ isOpen, onClose }) {
     // Redirigir a APP B en nueva pestaña
     // El token estará en la URL para validación inicial
     // APP B limpiarán la URL después de usarlo
-    const logsURL = `http://localhost:5174/logs?token=${encodeURIComponent(token)}`
+    const logsURL = `http://${window.location.hostname}:5174/logs?token=${encodeURIComponent(token)}`
     window.open(logsURL, '_blank')
   }
 

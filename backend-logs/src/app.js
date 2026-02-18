@@ -13,9 +13,21 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS - permitir solo App B
+// CORS - permitir orígenes locales y remotos
+const allowedOrigins = [
+    process.env.CORS_ORIGIN || 'http://localhost:5174', // Origen remoto
+    'http://localhost:5174', // Localhost
+    'http://127.0.0.1:5174',  // Loopback
+];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5174',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS not allowed'), false);
+        }
+    },
     credentials: true
 }));
 

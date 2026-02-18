@@ -107,6 +107,8 @@ services:
     volumes:
       # Montar código para hot-reload en desarrollo
       - ./backend/src:/app/src
+      # Montar scripts para ejecutar seeds
+      - ./backend/scripts:/app/scripts
       # Montar serviceAccountKey.json
       - ./backend/serviceAccountKey.json:/app/serviceAccountKey.json:ro
 
@@ -122,7 +124,7 @@ services:
       - "5173:5173"
     environment:
       # API URL apunta a localhost desde el navegador del host
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_URL=http://192.168.1.8:3000
     networks:
       - gestor_lab_network
     volumes:
@@ -216,7 +218,7 @@ services:
     ports:
       - "5174:5174"
     environment:
-      - VITE_API_URL=http://localhost:3001
+      - VITE_API_URL=http://192.168.1.8:3001
       - VITE_GOOGLE_CLIENT_ID=914352088149-c2hhm0gd4rlbu74vs95smggbcpucjkde.apps.googleusercontent.com
     depends_on:
       - backend-logs

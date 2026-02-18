@@ -176,17 +176,24 @@ class DashboardService {
     }
 
     const start = new Date();
+    const end = new Date();
     
     switch (timeRange) {
       case 'day':
+        // Últimas 24 horas y próximas 24 horas
         start.setDate(now.getDate() - 1);
+        end.setDate(now.getDate() + 1);
         break;
       case 'week':
+        // Últimas 7 días y próximos 7 días
         start.setDate(now.getDate() - 7);
+        end.setDate(now.getDate() + 7);
         break;
       case 'month':
       default:
+        // Último mes y próximo mes
         start.setMonth(now.getMonth() - 1);
+        end.setMonth(now.getMonth() + 1);
         break;
     }
 
@@ -207,7 +214,7 @@ class DashboardService {
           return false;
         }
 
-        return rDate >= start && rDate <= now;
+        return rDate >= start && rDate <= end;
       } catch {
         return false;
       }
