@@ -33,16 +33,6 @@ JWT_EXPIRES_IN=30m
 REFRESH_TOKEN_SECRET=your-refresh-secret-change-this
 REFRESH_TOKEN_EXPIRES_IN=30d
 
-# Firebase Configuration
-GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json
-FIREBASE_PROJECT_ID=your-firebase-project-id
-
-# Backblaze B2
-B2_KEY_ID=your_b2_key_id
-B2_APPLICATION_KEY=your_b2_app_key
-B2_BUCKET_ID=your_bucket_id
-B2_BUCKET_NAME=your_bucket_name
-
 # CORS
 CORS_ORIGIN=http://localhost:5173
 
@@ -50,25 +40,7 @@ CORS_ORIGIN=http://localhost:5173
 COOKIE_SECURE=false  # Set to true in production with HTTPS
 ```
 
-## 3. Firebase Setup
-
-### Download Service Account Key:
-
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project
-3. Go to **Project Settings** → **Service Accounts**
-4. Click **Generate New Private Key**
-5. Save the JSON file as `serviceAccountKey.json` in the `backend` directory
-
-### Alternative (Environment Variable):
-
-Instead of downloading the file, you can set the entire JSON as an environment variable:
-
-```env
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"..."}
-```
-
-## 4. Initialize Firestore
+## 3. Initialize Firestore
 
 Run the initialization script to create time slots:
 
@@ -80,15 +52,15 @@ This will:
 - Create 5 time slots: 7-9, 9-11, 11-13, 14-16, 16-18
 - Set up initial Firestore structure
 
-## 5. Create Firestore Indexes
+## 4. Create Firestore Indexes
 
 In the Firebase Console, go to **Firestore Database** → **Indexes** and create composite indexes:
 
-1. **auditLogs** collection:
-   - Fields: `userId` (Ascending), `createdAt` (Descending)
+1.  **auditLogs** collection:
+    - Fields: `userId` (Ascending), `createdAt` (Descending)
 
-2. **notifications** collection:
-   - Fields: `userId` (Ascending), `read` (Ascending), `created At` (Descending)
+2.  **notifications** collection:
+    - Fields: `userId` (Ascending), `read` (Ascending), `created At` (Descending)
 
 Or use the Firebase CLI:
 
@@ -96,14 +68,7 @@ Or use the Firebase CLI:
 firebase deploy --only firestore:indexes
 ```
 
-## 6. Backblaze B2 Setup
-
-1. Create a [Backblaze B2 account](https://www.backblaze.com/b2/sign-up.html)
-2. Create a new bucket for lab report attachments
-3. Generate an application key with read/write permissions
-4. Copy the credentials to `.env`
-
-## 7. Start Development Server
+## 5. Start Development Server
 
 ```bash
 npm run dev

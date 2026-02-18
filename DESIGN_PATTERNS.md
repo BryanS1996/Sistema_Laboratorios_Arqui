@@ -173,13 +173,13 @@ class UserPostgresDAO extends UserDAO {
    * Crea un nuevo usuario en PostgreSQL
    */
   async create(userData) {
-    const { email, passwordHash, nombre, role, firebaseUid } = userData;
+    const { email, passwordHash, nombre, role, googleId } = userData;
     const pool = getPool();
     const { rows } = await pool.query(
-      `INSERT INTO users(email, password_hash, nombre, role, firebase_uid)
+      `INSERT INTO users(email, password_hash, nombre, role, google_id)
        VALUES($1, $2, $3, $4, $5)
-       RETURNING id, email, nombre, role, created_at, firebase_uid`,
-      [email, passwordHash, nombre, role || 'student', firebaseUid || null]
+       RETURNING id, email, nombre, role, created_at, google_id`,
+      [email, passwordHash, nombre, role || 'student', googleId || null]
     );
     return rows[0];
   }
@@ -199,15 +199,15 @@ class UserPostgresDAO extends UserDAO {
   }
 
   /**
-   * Busca usuario por ID de Firebase
+   * Busca usuario por ID de Google
    */
-  async findByFirebaseUid(uid) {
+  async findByGoogleId(googleId) {
     const pool = getPool();
     const { rows } = await pool.query(
-      `SELECT id, email, nombre, role, password_hash as "passwordHash", 
-              created_at, last_login, firebase_uid 
-       FROM users WHERE firebase_uid=$1 LIMIT 1`,
-      [uid]
+      `SELECT id, email, nombre, role, 
+              created_at, last_login, google_id 
+       FROM users WHERE google_id=$1 LIMIT 1`,
+      [googleId]
     );
     return rows[0] || null;
   }

@@ -12,7 +12,7 @@ const ScheduleSchema = new mongoose.Schema({
     subjectName: { type: String },
     parallelName: { type: String },
 
-    firebaseUid: { type: String } // Optional: creator
+    // firebaseUid removed
 }, { timestamps: true });
 
 // Compound index to quickly find conflicts

@@ -27,7 +27,7 @@ graph TD
     subgraph "Services & Logic"
         Controllers --> Svc[Services Layer]
         Controllers --> Factory[Persistence Factory]
-        Svc --> FirebaseSvc[Firebase Service]
+        Svc --> GoogleSvc[Google OAuth Service]
         Svc --> RedisSvc[Redis Cache Service]
     end
     
@@ -43,7 +43,7 @@ graph TD
     end
     
     subgraph "External Services"
-        FirebaseSvc --> Firebase[(Firebase Auth)]
+        GoogleSvc --> Google[(Google OAuth)]
     end
 
     %% Estilos Profesionales
@@ -75,7 +75,7 @@ El **Polling Service** en el frontend solicita actualizaciones frecuentes (Dashb
 *   **Comunicación**: Polling optimizado cada 2 segundos hacia el backend.
 
 ### 2. Backend (Node.js + Express)
-*   **Seguridad**: Autenticación vía JWT y Firebase Admin (para notificaciones/auth).
+*   **Seguridad**: Autenticación vía JWT y Google OAuth.
 *   **Gestión de Datos**: Implementación del patrón de "Caché de Lectura" mediante un middleware personalizado.
 
 ### 3. Capa de Caché (Redis)
@@ -88,7 +88,3 @@ El **Polling Service** en el frontend solicita actualizaciones frecuentes (Dashb
 
 ### 5. Docker Orchestration
 *   Todo el ecosistema corre en una red aislada (`gestor_lab_network`), asegurando que solo sean accesibles los puertos necesarios (3000, 5173, 8082, etc.).
-
----
-> [!NOTE]
-> Backblaze ha sido excluido de este diagrama según lo solicitado, enfocándonos exclusivamente en la infraestructura local y de base de datos.

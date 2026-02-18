@@ -1,5 +1,5 @@
 const Report = require('../models/Report');
-const backblazeService = require('../services/backblaze.service');
+
 
 class ReportsController {
 
@@ -20,18 +20,21 @@ class ReportsController {
 
             // Handle file upload if present
             if (req.file) {
-                try {
-                    const uploadResult = await backblazeService.uploadFile(
-                        req.file.buffer,
-                        req.file.originalname,
-                        req.file.mimetype
-                    );
-                    imageUrl = uploadResult.url;
-                    imageId = uploadResult.fileId;
-                } catch (uploadError) {
-                    console.error('Error uploading file to B2:', uploadError);
-                    return res.status(500).json({ error: 'Error al subir la imagen. Intente nuevamente.' });
-                }
+                // TODO: Implement local storage or new cloud provider
+                // Backblaze service was removed.
+                console.warn('File upload disabled: Storage service not available');
+                // try {
+                //     const uploadResult = await backblazeService.uploadFile(
+                //         req.file.buffer,
+                //         req.file.originalname,
+                //         req.file.mimetype
+                //     );
+                //     imageUrl = uploadResult.url;
+                //     imageId = uploadResult.fileId;
+                // } catch (uploadError) {
+                //     console.error('Error uploading file to B2:', uploadError);
+                //     return res.status(500).json({ error: 'Error al subir la imagen. Intente nuevamente.' });
+                // }
             }
 
             const report = new Report({

@@ -8,11 +8,7 @@
    docker-compose --version
    ```
 
-2. **Archivo `serviceAccountKey.json` en `backend/`**
-   - Descarga desde Firebase Console
-   - Guárdalo como `backend/serviceAccountKey.json`
-
-3. **Archivo `.env` configurado en `backend/`**
+2. **Archivo `.env` configurado en `backend/`**
    - Copia desde `.env.example`
    - Configura tus credenciales
 
@@ -186,15 +182,6 @@ docker cp gestor_lab_mongo:/data/backup ./mongo_backup
 # Reconstruir con cache limpio
 docker-compose build --no-cache backend
 docker-compose up -d
-```
-
-### Error: "Firebase credentials not configured"
-```bash
-# Verificar que serviceAccountKey.json existe
-ls backend/serviceAccountKey.json
-
-# Verificar que está montado en el contenedor
-docker-compose exec backend ls -la /app/serviceAccountKey.json
 ```
 
 ### Error: "ECONNREFUSED mongo:27017"

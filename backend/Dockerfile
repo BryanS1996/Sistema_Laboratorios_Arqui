@@ -12,10 +12,6 @@ RUN npm install
 COPY src ./src
 COPY scripts ./scripts
 
-# Copiar archivo de credenciales de Firebase (si existe)
-# IMPORTANTE: Este archivo debe existir en tu máquina local
-COPY serviceAccountKey.json ./serviceAccountKey.json
-
 # Exponer puerto
 EXPOSE 3000
 

@@ -179,7 +179,7 @@ Utilizado para acelerar el Dashboard Administrativo y las consultas frecuentes d
 
 ## 🔐 Flujo de Autenticación (Google OAuth)
 
-El sistema ha eliminado Firebase en favor de una autenticación nativa con Google OAuth para mayor control y privacidad.
+El sistema utiliza autenticación nativa con Google OAuth para mayor control y privacidad.
 
 ```mermaid
 %%{init: {'theme': 'neutral', 'themeVariables': { 'background': '#FFFFFF', 'mainBkg': '#FFFFFF'}}}%%
@@ -194,7 +194,7 @@ sequenceDiagram
     F->>G: Solicita Acceso (Scope: profile, email)
     G-->>F: Retorna ID Token
     
-    F->>B: POST /auth/google { token }
+    F->>B: POST /auth/google { idToken }
     B->>G: Verifica validez del Token
     G-->>B: Token Válido + Datos Usuario
     
@@ -202,9 +202,9 @@ sequenceDiagram
     D-->>B: User ID & Rol
     
     B->>B: Generar JWT (Access & Refresh)
-    B-->>F: Set-Cookie (HttpOnly JWT)
+    B-->>F: Access Token (JSON) + Refresh Token (Cookie HttpOnly)
     
-    F->>B: GET /auth/me (con Cookie)
+    F->>B: GET /auth/me (con Access Token)
     B-->>F: Retorna Datos de Usuario + Rol
 ```
 

@@ -38,8 +38,7 @@ class AuthService {
       email: emailNorm,
       passwordHash,
       nombre,
-      role: finalRole,
-      firebaseUid: null // No longer using Firebase
+      role: finalRole
     });
 
     // Auto-enroll if student data provided
@@ -90,23 +89,17 @@ class AuthService {
     let user = await this.userDAO.findByEmail(emailNorm);
     let authenticatedLocally = false;
 
-    // 2. Validate against Postgres IF hash exists
-    if (user && user.passwordHash && !user.passwordHash.startsWith('$2a$10$dummy')) {
+    // 2. Validate against Postgres
+    if (user && user.passwordHash) {
       // Check password
       const validPassword = await bcrypt.compare(password, user.passwordHash);
       if (validPassword) {
         authenticatedLocally = true;
         console.log(`[DEBUG] Login: Local authentication successful for ${emailNorm}`);
       } else {
-        // If local hash exists but password wrong, we COULD try Firebase (synced password change?)
-        // primarily we should fail, but for migration safety/SSO confusion, let's allow fallback 
-        // ONLY if the hash might be stale. But normally "Validate in Postgres" means TRUST Postgres.
         console.log(`[DEBUG] Login: Local password mismatch for ${emailNorm}.`);
-        // We will fall through to Firebase check just in case pasword was changed in other system/reset
       }
     }
-
-    let firebaseUser = null;
 
     if (!authenticatedLocally) {
       // Password doesn't match - authentication failed
@@ -141,7 +134,7 @@ class AuthService {
       AuditService.ACTIONS.LOGIN,
       null,
       null,
-      { method: authenticatedLocally ? 'local' : 'firebase_sync' },
+      { method: 'local' },
       req
     );
 

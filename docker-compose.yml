@@ -131,28 +131,6 @@ services:
       - ./frontend/public:/app/public
       - ./frontend/index.html:/app/index.html
 
-  # Frontend - APP B (Logs SSO en puerto 5174)
-  frontend-logs:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: gestor_lab_frontend_logs
-    depends_on:
-      - backend
-    ports:
-      - "5174:5174"
-    environment:
-      # API URL apunta a localhost desde el navegador del host
-      - VITE_API_URL=http://localhost:3000
-    networks:
-      - gestor_lab_network
-    volumes:
-      # Montar código para hot-reload
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-    command: npm run dev -- --host 0.0.0.0 --port 5174
-
   # Redis - In-memory cache for high-performance data access
   redis:
     image: redis:7-alpine
@@ -183,6 +161,73 @@ services:
     networks:
       - gestor_lab_network
 
+  # PostgreSQL B (for App B - Logs Dashboard)
+  postgres-appb:
+    image: postgres:16
+    container_name: gestor_lab_postgres_appb
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=logadmin
+      - POSTGRES_PASSWORD=logpass2024
+      - POSTGRES_DB=logsdb
+    volumes:
+      - pg_appb_data:/var/lib/postgresql/data
+    networks:
+      - gestor_lab_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U logadmin" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend B (Logs API with SSO)
+  backend-logs:
+    build:
+      context: ./backend-logs
+      dockerfile: Dockerfile
+    container_name: gestor_lab_backend_logs
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend-logs/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-appb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - gestor_lab_network
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      interval: 30s
+      timeout: 3s
+      start_period: 40s
+      retries: 3
+
+  # Frontend B (Logs Dashboard) - App B独立en puerto 5174
+  frontend-logs-dashboard:
+    build:
+      context: ./frontend-logs
+      dockerfile: Dockerfile
+    container_name: gestor_lab_frontend_logs_dashboard
+    ports:
+      - "5174:5174"
+    environment:
+      - VITE_API_URL=http://localhost:3001
+      - VITE_GOOGLE_CLIENT_ID=914352088149-c2hhm0gd4rlbu74vs95smggbcpucjkde.apps.googleusercontent.com
+    depends_on:
+      - backend-logs
+    networks:
+      - gestor_lab_network
+    volumes:
+      # Montar código para hot-reload
+      - ./frontend-logs/src:/app/src
+      - ./frontend-logs/public:/app/public
+      - ./frontend-logs/index.html:/app/index.html
+
 # Volúmenes persistentes
 volumes:
   pg_data:
@@ -191,6 +236,8 @@ volumes:
     name: gestor_lab_mongo_data
   redis_data:
     name: gestor_lab_redis_data
+  pg_appb_data:
+    name: gestor_lab_pg_appb_data
 
 # Red personalizada
 networks:

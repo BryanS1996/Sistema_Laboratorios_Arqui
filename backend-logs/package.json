@@ -1,0 +1,33 @@
+{
+    "name": "backend-logs",
+    "version": "1.0.0",
+    "description": "Backend B - API para Dashboard de Logs (App B) con SSO",
+    "main": "src/server.js",
+    "scripts": {
+        "start": "node src/server.js",
+        "sync-admins": "node scripts/sync_admins.js",
+        "dev": "nodemon src/server.js"
+    },
+    "keywords": [
+        "logs",
+        "sso",
+        "audit",
+        "dashboard"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "cookie-parser": "^1.4.6",
+        "jsonwebtoken": "^9.0.2",
+        "pg": "^8.11.3",
+        "redis": "^4.6.10",
+        "google-auth-library": "^9.2.0",
+        "bcryptjs": "^2.4.3"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.1"
+    }
+}
